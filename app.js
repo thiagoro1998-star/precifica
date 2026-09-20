@@ -34,8 +34,15 @@ var state={
  packaging:[],supplies:[],channel:"direct",priceMode:"suggest",
  channelOpts:{amazonCategory:"Casa",amazonPlan:"individual",magaluPromo:false,magaluItemFee:false,tiktokShipping:false,tiktokAffiliate:0}
 };
-var stateRates={AC:.98,AL:1.04,AP:.92,AM:.96,BA:1.03,CE:1.01,DF:.89,ES:.93,GO:.91,MA:1.02,MT:.95,MS:.98,MG:.90,PA:1.08,PB:1.00,PR:.92,PE:1.06,PI:1.02,RJ:1.12,RN:1.01,RS:.90,RO:.95,RR:.93,SC:.88,SP:.95,SE:1.00,TO:.97};
-var ufs=Object.keys(stateRates);
+var ufs=["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+// Tarifas B1 residenciais sem tributos. Só usamos referências verificadas/identificáveis.
+// Praia Grande/SP pode ter registros de atendimento de mais de uma distribuidora; por isso o usuário escolhe a distribuidora.
+var energyRefs={
+ "SP|Praia Grande":[
+   {id:"elektro",name:"Neoenergia Elektro — B1 ANEEL",rate:.8916,source:"ANEEL REH 3.605/2026 · vigente desde 27/08/2026 · sem tributos"},
+   {id:"cpflp",name:"CPFL Piratininga — B1 ANEEL",rate:.7397,source:"ANEEL REH 3.543/2025 · vigência 2026 · sem tributos"}
+ ]
+};
 var amazonCats={"Comidas e bebidas":10,"Indústria e Ciência":12,"Brinquedos e jogos":12,"Casa":12,"Papelaria e Escritório":13,"Ferramentas e Construção":11,"Eletrônicos portáteis":13,"Roupas e acessórios":14,"Joias":14,"Livros":15,"Demais categorias":15};
 var channels=[["direct","Venda direta"],["shopee","Shopee"],["mlclassic","ML Clássico"],["mlpremium","ML Premium"],["amazon","Amazon"],["magalu","Magalu"],["tiktok","TikTok Shop"]];
 
@@ -46,8 +53,8 @@ function renderPieces(){
  state.pieces.forEach(function(p,i){
   var d=document.createElement("div");d.className="piece";
   d.innerHTML='<div class="pieceGrid"><div><label>Nome da peça <span class="muted">(opcional)</span></label><input class="input" data-p="name" data-id="'+p.id+'" placeholder="Peça '+(i+1)+'" value="'+(p.name||"")+'"></div>'+
-   '<div><label>Peso (g)</label><input class="input" type="number" min="0" step="0.1" data-p="weight" data-id="'+p.id+'" value="'+p.weight+'"></div>'+
-   '<div><label>Horas</label><input class="input" type="number" min="0" max="999" step="1" data-p="hours" data-id="'+p.id+'" value="'+p.hours+'"></div>'+
+   '<div><label>'+(state.mode==="equal"?"Peso total do fatiador (g)":"Peso deste item na mesa (g)")+'</label><input class="input" type="number" min="0" step="0.1" data-p="weight" data-id="'+p.id+'" value="'+p.weight+'"></div>'+
+   '<div><label>'+(state.mode==="equal"?"Horas totais da impressão":"Horas da mesa")+'</label><input class="input" type="number" min="0" max="999" step="1" data-p="hours" data-id="'+p.id+'" value="'+p.hours+'"></div>'+
    '<div><label>Minutos</label><select data-p="minutes" data-id="'+p.id+'">'+options60(p.minutes)+'</select></div>'+
    '<div><label>Quantidade</label><select data-p="qty" data-id="'+p.id+'">'+options100(p.qty)+'</select></div>'+
    '<button class="icon" data-del="'+p.id+'" title="Excluir">🗑</button></div>';
@@ -116,11 +123,25 @@ function renderChannel(){
  var ts=$("#tiktokShipping");if(ts)ts.onchange=function(){state.channelOpts.tiktokShipping=ts.checked;calc()};
  var ta=$("#tiktokAffiliate");if(ta)ta.oninput=function(){state.channelOpts.tiktokAffiliate=num(ta.value);calc()};
 }
-function totals(){var weight=0,hours=0,units=0;state.pieces.forEach(function(p){var q=Math.max(1,num(p.qty));weight+=num(p.weight)*q;hours+=(num(p.hours)+num(p.minutes)/60)*q;units+=q});return{weight:weight,hours:hours,units:Math.max(1,units)}}
+function totals(){
+ var weight=0,hours=0,units=0;
+ if(state.mode==="equal"){
+   var p=state.pieces[0]||{},q=Math.max(1,num(p.qty));
+   return{weight:num(p.weight),hours:num(p.hours)+num(p.minutes)/60,units:q};
+ }
+ // Em uma mesma mesa, o peso dos itens soma; o tempo é compartilhado, então usamos o maior tempo informado, não a soma.
+ state.pieces.forEach(function(p){weight+=num(p.weight);hours=Math.max(hours,num(p.hours)+num(p.minutes)/60);units+=Math.max(1,num(p.qty))});
+ return{weight:weight,hours:hours,units:Math.max(1,units)}
+}
 function erate(){
- if(state.energyMode==="bill"){var v=num($("#billValue").value),k=num($("#billKwh").value);return k>0?{rate:v/k,source:"pela conta"}:{rate:0,source:"aguardando conta"}}
+ if(state.energyMode==="bill"){
+   var v=num($("#billValue").value),k=num($("#billKwh").value);
+   return k>0?{rate:v/k,source:"pela conta · inclui o que veio efetivamente na fatura"}:{rate:0,source:"aguardando conta"}
+ }
  if(state.energyMode==="manual")return{rate:num($("#manualKwh").value),source:"manual"};
- var uf=$("#stateSelect").value||"SP",city=$("#citySelect").value||"";return{rate:stateRates[uf]||1,source:"estimativa estadual "+uf+(city?" · "+city:"")}
+ var sel=$("#distributorSelect"),opt=sel&&sel.selectedOptions?sel.selectedOptions[0]:null;
+ var rate=opt?num(opt.dataset.rate):0;
+ return rate>0?{rate:rate,source:opt.dataset.source||"referência da distribuidora"}:{rate:0,source:"sem tarifa automática verificada — use Da conta ou Manual"}
 }
 function failRate(){return $("#failurePreset").value==="custom"?num($("#failureCustom").value):num($("#failurePreset").value)}
 function post(){return $("#postProcess").value==="custom"?num($("#postCustom").value):num($("#postProcess").value)}
@@ -157,14 +178,19 @@ function resultAt(price,ch){
  return{price:price,c:c,f:f,taxv:taxv,loss:los,ads:ad,profit:profit,received:price-f.total-taxv-los-ad,margin:price?profit/price*100:0,markup:c.total?(price/c.total-1)*100:0}
 }
 function priceFor(target,ch){var lo=0,hi=Math.max(20,costs().total+target+20),i;for(i=0;i<60&&resultAt(hi,ch).profit<target;i++)hi*=1.7;for(i=0;i<80;i++){var mid=(lo+hi)/2;if(resultAt(mid,ch).profit>=target)hi=mid;else lo=mid}return hi}
+function priceForMargin(targetPct,ch){
+ var target=Math.max(0,Math.min(95,num(targetPct)))/100,lo=0,hi=Math.max(20,costs().total*3+20),i;
+ for(i=0;i<60&&resultAt(hi,ch).margin/100<target;i++)hi*=1.7;
+ for(i=0;i<80;i++){var mid=(lo+hi)/2;if(resultAt(mid,ch).margin/100>=target)hi=mid;else lo=mid}
+ return hi
+}
 function suggested(){
  var c=costs(),p=$("#suggestProfile").value,m=p==="economic"?1.7:p==="strong"?4.5:2.8,f=p==="economic"?5:p==="strong"?20:10,h=p==="economic"?1.5:p==="strong"?4:2.5;return Math.max(f,c.total*m,c.hoursPerUnit*h)
 }
 function target(){
  if(state.priceMode==="suggest")return suggested();
  if(state.priceMode==="profit")return num($("#targetProfit").value);
- if(state.priceMode==="margin"){var m=num($("#targetMargin").value)/100,c=costs().total;return Math.max(0,c*m/Math.max(.01,1-m))}
- return costs().total*num($("#targetMarkup").value)/100
+ return 0
 }
 function line(k,v){return '<div class="line"><span class="muted">'+k+'</span><b>'+brl(v)+"</b></div>"}
 function calc(){
@@ -172,11 +198,24 @@ function calc(){
  var e=erate(),c=costs();$("#kwhUsed").textContent=brl(e.rate)+"/kWh";$("#kwhSource").textContent=e.source;$("#energyCost").textContent=brl(c.projectEnergy);
  var tx=tax();if($("#taxProfile").value.indexOf("simples")===0)$("#simplesRate").value=tx.rate.toFixed(2).replace(".",",")+"%";$("#taxInfo").innerHTML="<b>"+tx.note+"</b><br>Taxa de marketplace é calculada separadamente e não é imposto.";
  var cv=cac();$("#cacHint").textContent=cv?"CAC calculado: "+brl(cv)+" por pedido.":"Sem histórico, CAC = R$ 0.";
- $("#suggestProfit").textContent=brl(suggested());var tp=target(),price=priceFor(tp,state.channel),r=resultAt(price,state.channel);
+ $("#suggestProfit").textContent=brl(suggested());
+ var tp=target(),price;
+ if(state.priceMode==="margin")price=priceForMargin(num($("#targetMargin").value),state.channel);
+ else if(state.priceMode==="markup")price=costs().total*(1+num($("#targetMarkup").value)/100);
+ else price=priceFor(tp,state.channel);
+ var r=resultAt(price,state.channel);
+ // O comparativo entre canais usa a MESMA meta de lucro líquido alcançada no canal principal.
+ tp=r.profit;
  $("#resCost").textContent=brl(c.total);$("#resPrice").textContent=brl(price);$("#resReceived").textContent=brl(r.received);$("#resProfit").textContent=brl(r.profit);$("#resMargin").textContent=pc(r.margin);$("#resMarkup").textContent=pc(r.markup);
  $("#stickyChannel").textContent=channels.find(function(x){return x[0]===state.channel})[1];$("#stickyPrice").textContent=brl(price);
  $("#costBreakdown").innerHTML=line("Filamento",c.filament)+line("Energia",c.energy)+line("Reserva manutenção",c.maintenance)+line("Pós-processamento",c.post)+line("Embalagens",c.packaging)+line("Insumos",c.supplies)+line("Frete",c.freight)+line("TOTAL",c.total);
  $("#feeBreakdown").innerHTML=line("Comissão ("+r.f.percent.toFixed(1)+"%)",price*r.f.percent/100)+line("Taxa fixa",r.f.fixed)+line("Extras do canal",r.f.extra)+line("Imposto",r.taxv)+line("CAC Ads",r.ads)+line("Reserva perdas",r.loss);
+ var tt=totals(),ff=presets.filaments.find(function(x){return x.id===state.selectedFilament}),cg=ff?ff.price/Math.max(1,ff.weight):0,er=erate();
+ $("#auditCalc").innerHTML="<b>Auditoria do custo por unidade</b><br>"+
+ "Filamento: "+tt.weight.toFixed(2).replace(".",",")+" g totais × "+brl(cg)+"/g ÷ "+tt.units+" un. = <b>"+brl(c.filament)+"</b><br>"+
+ "Energia: "+tt.hours.toFixed(2).replace(".",",")+" h totais × "+num($("#printerWatts").value)+" W ÷ 1000 × "+brl(er.rate)+"/kWh ÷ "+tt.units+" un. = <b>"+brl(c.energy)+"</b><br>"+
+ "Manutenção: "+tt.hours.toFixed(2).replace(".",",")+" h totais × "+brl(num($("#maintenanceHour").value))+"/h ÷ "+tt.units+" un. = <b>"+brl(c.maintenance)+"</b><br>"+
+ "<span class='muted'>Peso e tempo do fatiador são valores da mesa inteira. A quantidade divide esses custos entre as unidades.</span>";
  $("#scenarioChannel").textContent="Cenários em "+channels.find(function(x){return x[0]===state.channel})[1];
  var sc=[["Equilíbrio",0],["+ R$ 5",5],["+ R$ 10",10],["+ R$ 20",20],["+ R$ 30",30]];
  $("#priceChoices").innerHTML=sc.map(function(x){return '<button class="choice" data-scenario="'+x[1]+'"><div class="lab">'+x[0]+'</div><div class="price">'+brl(priceFor(x[1],state.channel))+"</div></button>"}).join("");
@@ -184,7 +223,28 @@ function calc(){
  $("#compareBody").innerHTML=channels.map(function(x){var p=priceFor(tp,x[0]),rr=resultAt(p,x[0]),mm=meta(x[0]);return "<tr><td><b>"+x[1]+"</b></td><td>"+brl(p)+"</td><td>"+brl(rr.f.total)+"</td><td>"+brl(rr.received)+'</td><td class="good"><b>'+brl(rr.profit)+"</b></td><td>"+pc(rr.margin)+'</td><td><span class="badge '+(mm[0]==="Alta"?"h":"")+'">'+mm[0]+"</span></td></tr>"}).join("");
 }
 function showMode(){["suggest","profit","margin","markup"].forEach(function(m){$("#"+m+"Box").classList.toggle("hidden",state.priceMode!==m)})}
-async function cities(uf){var c=$("#citySelect");c.innerHTML="<option>Carregando...</option>";try{var res=await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados/"+uf+"/municipios"),arr=await res.json();c.innerHTML='<option value="">Selecione a cidade</option>'+arr.map(function(x){return "<option>"+x.nome+"</option>"}).join("");if(uf==="SP")c.value="Praia Grande"}catch(e){c.innerHTML='<option value="">Cidade indisponível — estimativa estadual</option>'}calc()}
+function updateDistributorOptions(){
+ var uf=$("#stateSelect").value||"",city=$("#citySelect").value||"",sel=$("#distributorSelect");
+ if(!sel)return;
+ var refs=energyRefs[uf+"|"+city]||[];
+ if(!refs.length){
+   sel.innerHTML='<option value="">Nenhuma tarifa verificada cadastrada para esta cidade</option>';
+   $("#energyRefHint").textContent="Não vou inventar uma tarifa estadual. Use “Da conta” (mais preciso) ou Manual.";
+ }else{
+   sel.innerHTML='<option value="">Selecione sua distribuidora</option>'+refs.map(function(x){return '<option value="'+x.id+'" data-rate="'+x.rate+'" data-source="'+x.source+'">'+x.name+" · "+brl(x.rate)+"/kWh</option>"}).join("");
+   $("#energyRefHint").textContent="Escolha a distribuidora que aparece na sua conta. Os valores B1 são referências ANEEL sem tributos; a sua fatura continua sendo a opção mais precisa.";
+ }
+ calc()
+}
+async function cities(uf){
+ var c=$("#citySelect");c.innerHTML="<option>Carregando...</option>";
+ try{
+   var res=await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados/"+uf+"/municipios"),arr=await res.json();
+   c.innerHTML='<option value="">Selecione a cidade</option>'+arr.map(function(x){return "<option>"+x.nome+"</option>"}).join("");
+   if(uf==="SP")c.value="Praia Grande";
+ }catch(e){c.innerHTML='<option value="">Cidade indisponível</option>'}
+ updateDistributorOptions()
+}
 function stateInit(){var s=$("#stateSelect");s.innerHTML=ufs.map(function(x){return "<option>"+x+"</option>"}).join("");s.value="SP";cities("SP")}
 
 function editor(kind){
@@ -213,7 +273,7 @@ function init(){
  $("#addPackagingPreset").onclick=function(){presets.packaging.push({id:id(),name:"Nova embalagem",unit:0});save();editor("packaging");renderSelects()};
  $("#addSupplyPreset").onclick=function(){presets.supplies.push({id:id(),name:"Novo insumo",unit:0});save();editor("supply");renderSelects()};
  $$(".energyMode").forEach(function(b){b.onclick=function(){state.energyMode=b.dataset.energy;$$(".energyMode").forEach(function(x){x.classList.toggle("active",x===b)});$("#energyBill").classList.toggle("hidden",state.energyMode!=="bill");$("#energyReference").classList.toggle("hidden",state.energyMode!=="reference");$("#energyManual").classList.toggle("hidden",state.energyMode!=="manual");calc()}});
- $("#stateSelect").onchange=function(){cities(this.value)};$("#citySelect").onchange=calc;
+ $("#stateSelect").onchange=function(){cities(this.value)};$("#citySelect").onchange=updateDistributorOptions;$("#distributorSelect").onchange=calc;
  $("#failurePreset").onchange=function(){$("#failureCustomWrap").classList.toggle("hidden",this.value!=="custom");calc()};$("#postProcess").onchange=function(){$("#postCustom").classList.toggle("hidden",this.value!=="custom");calc()};$("#lossReserve").onchange=function(){$("#lossCustom").classList.toggle("hidden",this.value!=="custom");calc()};
  $("#taxProfile").onchange=function(){$("#simplesBox").classList.toggle("hidden",this.value.indexOf("simples")!==0);calc()};$("#meiAllocate").onchange=function(){$("#meiOrdersWrap").classList.toggle("hidden",!this.checked);calc()};$("#adsOn").onchange=function(){$("#adsBox").classList.toggle("hidden",!this.checked);calc()};
  $$("[data-price-mode]").forEach(function(b){b.onclick=function(){state.priceMode=b.dataset.priceMode;$$("[data-price-mode]").forEach(function(x){x.classList.toggle("active",x===b)});showMode();calc()}});

@@ -29,7 +29,7 @@ function load(){try{var x=JSON.parse(localStorage.getItem(KEY));return x?Object.
 function save(){localStorage.setItem(KEY,JSON.stringify(presets))}
 var presets=load();
 var state={
- mode:"equal",pieces:[{id:id(),name:"",weight:"",hours:"",minutes:0,qty:1}],energyMode:"bill",
+ mode:"equal",pieces:[{id:id(),name:"",weight:"",hours:"",minutes:0,qty:1,slicerCost:""}],energyMode:"bill",
  selectedFilament:presets.filaments[0]?presets.filaments[0].id:"",selectedPrinter:presets.printers[0]?presets.printers[0].id:"",
  packaging:[],supplies:[],channel:"direct",priceMode:"suggest",
  channelOpts:{amazonCategory:"Casa",amazonPlan:"individual",magaluPromo:false,magaluItemFee:false,tiktokShipping:false,tiktokAffiliate:0}
@@ -52,12 +52,14 @@ function renderPieces(){
  var host=$("#pieces");host.innerHTML="";
  state.pieces.forEach(function(p,i){
   var d=document.createElement("div");d.className="piece";
-  d.innerHTML='<div class="pieceGrid"><div><label>Nome da peça <span class="muted">(opcional)</span></label><input class="input" data-p="name" data-id="'+p.id+'" placeholder="Peça '+(i+1)+'" value="'+(p.name||"")+'"></div>'+
-   '<div><label>'+(state.mode==="equal"?"Peso total do fatiador (g)":"Peso deste item na mesa (g)")+'</label><input class="input" type="number" min="0" step="0.1" data-p="weight" data-id="'+p.id+'" value="'+p.weight+'"></div>'+
-   '<div><label>'+(state.mode==="equal"?"Horas totais da impressão":"Horas da mesa")+'</label><input class="input" type="number" min="0" max="999" step="1" data-p="hours" data-id="'+p.id+'" value="'+p.hours+'"></div>'+
+  d.innerHTML='<div class="pieceGrid"><div><label>'+(state.mode==="equal"?"Nome da peça":"Componente / fatiamento")+' <span class="muted">(opcional)</span></label><input class="input" data-p="name" data-id="'+p.id+'" placeholder="'+(state.mode==="equal"?"Peça "+(i+1):"Ex.: Moldura / Encaixes")+'" value="'+(p.name||"")+'"></div>'+
+   '<div><label>'+(state.mode==="equal"?"Peso total do fatiador (g)":"Peso total deste fatiamento (g)")+'</label><input class="input" type="number" min="0" step="0.01" data-p="weight" data-id="'+p.id+'" value="'+p.weight+'"></div>'+
+   '<div><label>Horas totais</label><input class="input" type="number" min="0" max="999" step="1" data-p="hours" data-id="'+p.id+'" value="'+p.hours+'"></div>'+
    '<div><label>Minutos</label><select data-p="minutes" data-id="'+p.id+'">'+options60(p.minutes)+'</select></div>'+
-   '<div><label>Quantidade</label><select data-p="qty" data-id="'+p.id+'">'+options100(p.qty)+'</select></div>'+
-   '<button class="icon" data-del="'+p.id+'" title="Excluir">🗑</button></div>';
+   '<div><label>'+(state.mode==="equal"?"Produtos gerados":"Produtos finais atendidos")+'</label><select data-p="qty" data-id="'+p.id+'">'+options100(p.qty)+'</select></div>'+
+   '<div><label>Custo no fatiador <span class="muted">(R$ opc.)</span></label><input class="input" type="number" min="0" step="0.01" data-p="slicerCost" data-id="'+p.id+'" value="'+(p.slicerCost||"")+'" placeholder="Ex.: 2,79"></div>'+
+   '<button class="icon" data-del="'+p.id+'" title="Excluir">🗑</button></div>'+
+   '<div class="hint" style="margin-top:7px">'+(state.mode==="equal"?"Peso e tempo são da mesa inteira; o sistema divide pela quantidade de produtos gerados.":"Cada linha representa um fatiamento/componente do MESMO produto final. Ex.: moldura + encaixes. O custo por produto soma todas as linhas, dividindo cada uma apenas pelo número de produtos finais que aquele fatiamento atende.")+'</div>';
   host.appendChild(d);
  });
  $$("[data-p]").forEach(function(el){el.oninput=function(e){var p=state.pieces.find(function(x){return x.id===e.target.dataset.id});p[e.target.dataset.p]=e.target.value;calc()}});
@@ -123,33 +125,30 @@ function renderChannel(){
  var ts=$("#tiktokShipping");if(ts)ts.onchange=function(){state.channelOpts.tiktokShipping=ts.checked;calc()};
  var ta=$("#tiktokAffiliate");if(ta)ta.oninput=function(){state.channelOpts.tiktokAffiliate=num(ta.value);calc()};
 }
+function productionSummary(){
+ var f=presets.filaments.find(function(x){return x.id===state.selectedFilament}),cg=f?f.price/Math.max(1,f.weight):0,e=erate(),
+     watts=num($("#printerWatts").value),maintRate=num($("#maintenanceHour").value),fail=1+failRate()/100;
+ var filament=0,energy=0,maintenance=0,totalWeight=0,totalHours=0,slicerRef=0,hasSlicerRef=false,details=[];
+ var rows=state.mode==="equal"?state.pieces.slice(0,1):state.pieces;
+ rows.forEach(function(p,i){
+   var q=Math.max(1,num(p.qty)),w=num(p.weight),h=num(p.hours)+num(p.minutes)/60;
+   var fil=w*cg*fail/q, en=h*watts/1000*e.rate/q, ma=h*maintRate/q, sr=num(p.slicerCost)/q;
+   filament+=fil;energy+=en;maintenance+=ma;totalWeight+=w;totalHours+=h;
+   if(num(p.slicerCost)>0){slicerRef+=sr;hasSlicerRef=true}
+   details.push({name:p.name||("Fatiamento "+(i+1)),weight:w,hours:h,outputs:q,filament:fil,energy:en,maintenance:ma,slicerRef:num(p.slicerCost)>0?sr:null});
+ });
+ return{filament:filament,energy:energy,maintenance:maintenance,totalWeight:totalWeight,totalHours:totalHours,slicerRef:hasSlicerRef?slicerRef:null,details:details,hoursPerUnit:details.reduce(function(a,x){return a+x.hours/x.outputs},0)}
+}
 function totals(){
- var weight=0,hours=0,units=0;
- if(state.mode==="equal"){
-   var p=state.pieces[0]||{},q=Math.max(1,num(p.qty));
-   return{weight:num(p.weight),hours:num(p.hours)+num(p.minutes)/60,units:q};
- }
- // Em uma mesma mesa, o peso dos itens soma; o tempo é compartilhado, então usamos o maior tempo informado, não a soma.
- state.pieces.forEach(function(p){weight+=num(p.weight);hours=Math.max(hours,num(p.hours)+num(p.minutes)/60);units+=Math.max(1,num(p.qty))});
- return{weight:weight,hours:hours,units:Math.max(1,units)}
+ var p=productionSummary();
+ return{weight:p.totalWeight,hours:p.totalHours,units:1}
 }
-function erate(){
- if(state.energyMode==="bill"){
-   var v=num($("#billValue").value),k=num($("#billKwh").value);
-   return k>0?{rate:v/k,source:"pela conta · inclui o que veio efetivamente na fatura"}:{rate:0,source:"aguardando conta"}
- }
- if(state.energyMode==="manual")return{rate:num($("#manualKwh").value),source:"manual"};
- var sel=$("#distributorSelect"),opt=sel&&sel.selectedOptions?sel.selectedOptions[0]:null;
- var rate=opt?num(opt.dataset.rate):0;
- return rate>0?{rate:rate,source:opt.dataset.source||"referência da distribuidora"}:{rate:0,source:"sem tarifa automática verificada — use Da conta ou Manual"}
-}
-function failRate(){return $("#failurePreset").value==="custom"?num($("#failureCustom").value):num($("#failurePreset").value)}
-function post(){return $("#postProcess").value==="custom"?num($("#postCustom").value):num($("#postProcess").value)}
 function costs(){
- var f=presets.filaments.find(function(x){return x.id===state.selectedFilament}),t=totals(),u=t.units,cg=f?f.price/Math.max(1,f.weight):0;
- var filament=t.weight*cg*(1+failRate()/100)/u, e=erate(), energy=t.hours*num($("#printerWatts").value)/1000*e.rate/u, maint=t.hours*num($("#maintenanceHour").value)/u;
- var pack=state.packaging.reduce(function(s,x){return s+num(x.unit)*num(x.qty)},0),sup=state.supplies.reduce(function(s,x){return s+num(x.unit)*num(x.qty)},0),fr=num($("#sellerFreight").value),pp=post();
- return{filament:filament,energy:energy,maintenance:maint,packaging:pack,supplies:sup,freight:fr,post:pp,total:filament+energy+maint+pack+sup+fr+pp,projectEnergy:energy*u,hoursPerUnit:t.hours/u}
+ var p=productionSummary(),pack=state.packaging.reduce(function(s,x){return s+num(x.unit)*num(x.qty)},0),
+     sup=state.supplies.reduce(function(s,x){return s+num(x.unit)*num(x.qty)},0),fr=num($("#sellerFreight").value),pp=post();
+ return{filament:p.filament,energy:p.energy,maintenance:p.maintenance,packaging:pack,supplies:sup,freight:fr,post:pp,
+ total:p.filament+p.energy+p.maintenance+pack+sup+fr+pp,projectEnergy:p.details.reduce(function(a,x){return a+x.energy*x.outputs},0),
+ hoursPerUnit:p.hoursPerUnit,slicerRef:p.slicerRef,productionDetails:p.details}
 }
 function simples(rbt,industry){if(rbt<=0)return 0;var a=industry?[[180000,.045,0],[360000,.078,5940],[720000,.10,13860],[1800000,.112,22500],[3600000,.147,85500],[4800000,.30,720000]]:[[180000,.04,0],[360000,.073,5940],[720000,.095,13860],[1800000,.107,22500],[3600000,.143,87300],[4800000,.19,378000]];var row=a.find(function(x){return rbt<=x[0]})||a[a.length-1];return Math.max(0,(rbt*row[1]-row[2])/rbt*100)}
 function tax(){
@@ -210,12 +209,14 @@ function calc(){
  $("#stickyChannel").textContent=channels.find(function(x){return x[0]===state.channel})[1];$("#stickyPrice").textContent=brl(price);
  $("#costBreakdown").innerHTML=line("Filamento",c.filament)+line("Energia",c.energy)+line("Reserva manutenção",c.maintenance)+line("Pós-processamento",c.post)+line("Embalagens",c.packaging)+line("Insumos",c.supplies)+line("Frete",c.freight)+line("TOTAL",c.total);
  $("#feeBreakdown").innerHTML=line("Comissão ("+r.f.percent.toFixed(1)+"%)",price*r.f.percent/100)+line("Taxa fixa",r.f.fixed)+line("Extras do canal",r.f.extra)+line("Imposto",r.taxv)+line("CAC Ads",r.ads)+line("Reserva perdas",r.loss);
- var tt=totals(),ff=presets.filaments.find(function(x){return x.id===state.selectedFilament}),cg=ff?ff.price/Math.max(1,ff.weight):0,er=erate();
- $("#auditCalc").innerHTML="<b>Auditoria do custo por unidade</b><br>"+
- "Filamento: "+tt.weight.toFixed(2).replace(".",",")+" g totais × "+brl(cg)+"/g ÷ "+tt.units+" un. = <b>"+brl(c.filament)+"</b><br>"+
- "Energia: "+tt.hours.toFixed(2).replace(".",",")+" h totais × "+num($("#printerWatts").value)+" W ÷ 1000 × "+brl(er.rate)+"/kWh ÷ "+tt.units+" un. = <b>"+brl(c.energy)+"</b><br>"+
- "Manutenção: "+tt.hours.toFixed(2).replace(".",",")+" h totais × "+brl(num($("#maintenanceHour").value))+"/h ÷ "+tt.units+" un. = <b>"+brl(c.maintenance)+"</b><br>"+
- "<span class='muted'>Peso e tempo do fatiador são valores da mesa inteira. A quantidade divide esses custos entre as unidades.</span>";
+ var ff=presets.filaments.find(function(x){return x.id===state.selectedFilament}),cg=ff?ff.price/Math.max(1,ff.weight):0,er=erate();
+ var det=c.productionDetails.map(function(x){
+   return "<div style='margin-top:6px'><b>"+x.name+"</b>: "+x.weight.toFixed(2).replace(".",",")+" g; "+x.hours.toFixed(2).replace(".",",")+" h; atende "+x.outputs+" produto(s) → filamento <b>"+brl(x.filament)+"</b>, energia <b>"+brl(x.energy)+"</b>, manutenção <b>"+brl(x.maintenance)+"</b>"+(x.slicerRef!==null?", fatiador <b>"+brl(x.slicerRef)+"</b>":"")+"</div>";
+ }).join("");
+ var ref=c.slicerRef!==null?("<div style='margin-top:8px'><b>Conferência com o fatiador:</b> "+brl(c.slicerRef)+" de custo de material informado × nosso filamento "+brl(c.filament)+" → diferença <b>"+brl(c.filament-c.slicerRef)+"</b>.</div>"):"";
+ $("#auditCalc").innerHTML="<b>Auditoria do custo por produto final</b>"+det+
+ "<div style='margin-top:8px'>Filamento usado no cálculo: <b>"+brl(cg)+"/g</b>. Energia: <b>"+brl(er.rate)+"/kWh</b>. Manutenção: <b>"+brl(num($("#maintenanceHour").value))+"/h</b>.</div>"+ref+
+ "<div class='muted' style='margin-top:7px'>Importante: o “Custo” do Bambu Studio é referência de FILAMENTO do perfil; ele não inclui nossa energia, manutenção, embalagem, taxa do marketplace nem lucro.</div>";
  $("#scenarioChannel").textContent="Cenários em "+channels.find(function(x){return x[0]===state.channel})[1];
  var sc=[["Equilíbrio",0],["+ R$ 5",5],["+ R$ 10",10],["+ R$ 20",20],["+ R$ 30",30]];
  $("#priceChoices").innerHTML=sc.map(function(x){return '<button class="choice" data-scenario="'+x[1]+'"><div class="lab">'+x[0]+'</div><div class="price">'+brl(priceFor(x[1],state.channel))+"</div></button>"}).join("");
@@ -263,7 +264,7 @@ function editor(kind){
 function init(){
  renderPieces();renderSelects();renderMarkets();stateInit();
  $$("[data-mode]").forEach(function(b){b.onclick=function(){state.mode=b.dataset.mode;$$("[data-mode]").forEach(function(x){x.classList.toggle("active",x===b)});if(state.mode==="equal")state.pieces=state.pieces.slice(0,1);renderPieces();calc()}});
- $("#addPiece").onclick=function(){state.pieces.push({id:id(),name:"",weight:"",hours:"",minutes:0,qty:1});state.mode="different";$$("[data-mode]").forEach(function(x){x.classList.toggle("active",x.dataset.mode==="different")});renderPieces();calc()};
+ $("#addPiece").onclick=function(){state.pieces.push({id:id(),name:"",weight:"",hours:"",minutes:0,qty:1,slicerCost:""});state.mode="different";$$("[data-mode]").forEach(function(x){x.classList.toggle("active",x.dataset.mode==="different")});renderPieces();calc()};
  $("#filamentPreset").onchange=function(){state.selectedFilament=this.value;calc()};$("#printerPreset").onchange=function(){state.selectedPrinter=this.value;syncPrinter();calc()};
  $("#addPackaging").onclick=function(){addRow("packaging")};$("#addSupply").onclick=function(){addRow("supplies")};
  $$("[data-open]").forEach(function(b){b.onclick=function(){var mid=b.dataset.open,k=mid.indexOf("filament")>=0?"filament":mid.indexOf("printer")>=0?"printer":mid.indexOf("packaging")>=0?"packaging":"supply";editor(k);$("#"+mid).classList.add("open")}});
@@ -278,7 +279,7 @@ function init(){
  $("#taxProfile").onchange=function(){$("#simplesBox").classList.toggle("hidden",this.value.indexOf("simples")!==0);calc()};$("#meiAllocate").onchange=function(){$("#meiOrdersWrap").classList.toggle("hidden",!this.checked);calc()};$("#adsOn").onchange=function(){$("#adsBox").classList.toggle("hidden",!this.checked);calc()};
  $$("[data-price-mode]").forEach(function(b){b.onclick=function(){state.priceMode=b.dataset.priceMode;$$("[data-price-mode]").forEach(function(x){x.classList.toggle("active",x===b)});showMode();calc()}});
  ["material","printerWatts","maintenanceHour","billValue","billKwh","manualKwh","sellerFreight","postCustom","rbt12","manualTaxRate","meiOrders","adsSpend","adsOrders","lossCustom","suggestProfile","targetProfit","targetMargin","targetMarkup","overridePct","overrideFixed"].forEach(function(i){var el=$("#"+i);if(el){el.oninput=calc;if(el.tagName==="SELECT")el.onchange=calc}});
- $("#resetBtn").onclick=function(){state.pieces=[{id:id(),name:"",weight:"",hours:"",minutes:0,qty:1}];state.packaging=[];state.supplies=[];$("#projectName").value="";$("#billValue").value="";$("#billKwh").value="";$("#sellerFreight").value=0;renderPieces();renderRows("packaging");renderRows("supplies");calc()};
+ $("#resetBtn").onclick=function(){state.pieces=[{id:id(),name:"",weight:"",hours:"",minutes:0,qty:1,slicerCost:""}];state.packaging=[];state.supplies=[];$("#projectName").value="";$("#billValue").value="";$("#billKwh").value="";$("#sellerFreight").value=0;renderPieces();renderRows("packaging");renderRows("supplies");calc()};
  $("#exportBtn").onclick=function(){var blob=new Blob([JSON.stringify(presets,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="precifica3d-presets.json";a.click();URL.revokeObjectURL(a.href)};
  $("#importBtn").onclick=function(){$("#importFile").click()};$("#importFile").onchange=async function(e){try{var x=JSON.parse(await e.target.files[0].text());presets=Object.assign(clone(def),x);save();renderSelects();calc();alert("Presets importados.")}catch(err){alert("Arquivo inválido.")}};
 }

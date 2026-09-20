@@ -17,6 +17,8 @@ jobs:
         run: |
           mkdir -p dist
           cp index.html style.css app.js dist/
+      - name: Build current ANEEL residential tariff snapshot
+        run: python3 scripts/build_tariffs.py
       - name: Publish gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:

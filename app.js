@@ -35,14 +35,90 @@ var state={
  channelOpts:{amazonCategory:"Casa",amazonPlan:"individual",magaluPromo:false,magaluItemFee:false,tiktokShipping:false,tiktokAffiliate:0}
 };
 var ufs=["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
-// Tarifas B1 residenciais sem tributos. Só usamos referências verificadas/identificáveis.
-// Praia Grande/SP pode ter registros de atendimento de mais de uma distribuidora; por isso o usuário escolhe a distribuidora.
-var energyRefs={
- "SP|Praia Grande":[
-   {id:"elektro",name:"Neoenergia Elektro — B1 ANEEL",rate:.8916,source:"ANEEL REH 3.605/2026 · vigente desde 27/08/2026 · sem tributos"},
-   {id:"cpflp",name:"CPFL Piratininga — B1 ANEEL",rate:.7397,source:"ANEEL REH 3.543/2025 · vigência 2026 · sem tributos"}
- ]
+// Catálogo de distribuidoras por UF. Quando a UF tem uma única grande concessionária,
+// mantemos uma segunda opção "Outra distribuidora/permissionária" em vez de inventar uma empresa.
+var providersByState={
+ AC:[{name:"Energisa Acre",q:"Energisa Acre"},{name:"Outra distribuidora / permissionária do Acre",manual:true}],
+ AL:[{name:"Equatorial Alagoas",q:"Equatorial Alagoas"},{name:"Outra distribuidora / permissionária de Alagoas",manual:true}],
+ AP:[{name:"CEA Equatorial",q:"CEA Equatorial"},{name:"Outra distribuidora / permissionária do Amapá",manual:true}],
+ AM:[{name:"Amazonas Energia",q:"Amazonas Energia"},{name:"Outra distribuidora / permissionária do Amazonas",manual:true}],
+ BA:[{name:"Neoenergia Coelba",q:"Coelba"},{name:"Sulgipe",q:"Sulgipe"}],
+ CE:[{name:"Enel Ceará",q:"Enel Ceará"},{name:"Outra distribuidora / permissionária do Ceará",manual:true}],
+ DF:[{name:"Neoenergia Brasília",q:"Neoenergia Brasília"},{name:"Outra distribuidora / permissionária do DF",manual:true}],
+ ES:[{name:"EDP Espírito Santo",q:"EDP ES"},{name:"ELFSM / Santa Maria",q:"Santa Maria"}],
+ GO:[{name:"Equatorial Goiás",q:"Equatorial Goiás"},{name:"Outra distribuidora / permissionária de Goiás",manual:true}],
+ MA:[{name:"Equatorial Maranhão",q:"Equatorial Maranhão"},{name:"Outra distribuidora / permissionária do Maranhão",manual:true}],
+ MT:[{name:"Energisa Mato Grosso",q:"Energisa Mato Grosso"},{name:"Outra distribuidora / permissionária de Mato Grosso",manual:true}],
+ MS:[{name:"Energisa Mato Grosso do Sul",q:"Energisa Mato Grosso do Sul"},{name:"Neoenergia Elektro",q:"Elektro"}],
+ MG:[{name:"Cemig-D",q:"CEMIG-D"},{name:"Energisa Minas Rio",q:"Energisa Minas Rio"},{name:"DMED Poços de Caldas",q:"DMED"}],
+ PA:[{name:"Equatorial Pará",q:"Equatorial Pará"},{name:"Outra distribuidora / permissionária do Pará",manual:true}],
+ PB:[{name:"Energisa Paraíba",q:"Energisa Paraíba"},{name:"Energisa Borborema",q:"Borborema"}],
+ PR:[{name:"Copel Distribuição",q:"COPEL-DIS"},{name:"Forcel",q:"FORCEL"}],
+ PE:[{name:"Neoenergia Pernambuco",q:"Neoenergia Pernambuco"},{name:"Outra distribuidora / permissionária de Pernambuco",manual:true}],
+ PI:[{name:"Equatorial Piauí",q:"Equatorial Piauí"},{name:"Outra distribuidora / permissionária do Piauí",manual:true}],
+ RJ:[{name:"Light",q:"LIGHT"},{name:"Enel Rio",q:"Enel RJ"},{name:"Energisa Nova Friburgo",q:"Nova Friburgo"}],
+ RN:[{name:"Neoenergia Cosern",q:"COSERN"},{name:"Outra distribuidora / permissionária do Rio Grande do Norte",manual:true}],
+ RS:[{name:"RGE",q:"RGE"},{name:"CEEE Equatorial",q:"CEEE-D"},{name:"Cooperativa / permissionária local",manual:true}],
+ RO:[{name:"Energisa Rondônia",q:"Energisa Rondônia"},{name:"Outra distribuidora / permissionária de Rondônia",manual:true}],
+ RR:[{name:"Roraima Energia",q:"Roraima Energia"},{name:"Outra distribuidora / permissionária de Roraima",manual:true}],
+ SC:[{name:"Celesc Distribuição",q:"CELESC-DIS"},{name:"Energisa Santa Catarina",q:"Energisa Santa Catarina"},{name:"Cooperaliança",q:"Cooperaliança"}],
+ SP:[{name:"CPFL Piratininga",q:"Piratininga"},{name:"Neoenergia Elektro",q:"Elektro"},{name:"CPFL Paulista",q:"Paulista"},{name:"Enel São Paulo",q:"Enel SP"},{name:"EDP São Paulo",q:"EDP SP"},{name:"Energisa Sul-Sudeste",q:"Sul-Sudeste"}],
+ SE:[{name:"Energisa Sergipe",q:"Energisa Sergipe"},{name:"Sulgipe",q:"Sulgipe"}],
+ TO:[{name:"Energisa Tocantins",q:"Energisa Tocantins"},{name:"Outra distribuidora / permissionária do Tocantins",manual:true}]
 };
+var ANEEL_RESOURCE="fcf2906c-7c32-4b9b-a637-054e7a5234f4";
+var aneelCache={};
+
+function parseAneelDate(v){
+ if(!v)return null; var m=String(v).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+ if(m)return new Date(+m[3],+m[2]-1,+m[1]);
+ var d=new Date(v); return isNaN(d)?null:d;
+}
+function normalizeTariff(v){
+ var n=num(v); if(n>20)n=n/1000; return n;
+}
+function pickAneelResidential(records){
+ var today=new Date(), filtered=records.filter(function(r){
+   var sub=String(r.DscSubGrupo||"").toUpperCase(), mod=String(r.DscModalidadeTarifaria||"").toLowerCase(),
+       cls=(String(r.DscClasse||"")+" "+String(r.DscSubClasse||"")).toLowerCase(),
+       ini=parseAneelDate(r.DatInicioVigencia), fim=parseAneelDate(r.DatFimVigencia);
+   return sub==="B1" && mod.indexOf("convencional")>=0 && cls.indexOf("resid")>=0 &&
+     (!ini||ini<=today) && (!fim||fim>=today);
+ });
+ filtered.sort(function(a,b){return (parseAneelDate(b.DatInicioVigencia)||0)-(parseAneelDate(a.DatInicioVigencia)||0)});
+ for(var i=0;i<filtered.length;i++){
+   var tusd=normalizeTariff(filtered[i].VlrTUSD),te=normalizeTariff(filtered[i].VlrTE),sum=tusd+te;
+   if(sum>0.1&&sum<5)return{rate:sum,row:filtered[i]};
+ }
+ return null;
+}
+async function fetchAneelTariff(provider){
+ var sel=$("#distributorSelect"),hint=$("#energyRefHint");
+ if(!provider||provider.manual){
+   if(sel&&sel.selectedOptions[0]){delete sel.selectedOptions[0].dataset.rate;delete sel.selectedOptions[0].dataset.source}
+   hint.textContent="Para esta opção, informe o valor no modo Manual ou use “Da conta”. Não vou inventar uma tarifa.";
+   calc(); return;
+ }
+ if(aneelCache[provider.q]){
+   var c=aneelCache[provider.q],opt=sel.selectedOptions[0];opt.dataset.rate=c.rate;opt.dataset.source=c.source;hint.textContent=c.label;calc();return;
+ }
+ hint.textContent="Consultando tarifa residencial B1 vigente na base oficial da ANEEL…";
+ try{
+   var url="https://dadosabertos.aneel.gov.br/api/3/action/datastore_search?resource_id="+ANEEL_RESOURCE+"&limit=1000&q="+encodeURIComponent(provider.q);
+   var res=await fetch(url),json=await res.json(),records=json&&json.result&&json.result.records?json.result.records:[];
+   var picked=pickAneelResidential(records);
+   if(!picked)throw new Error("sem registro B1 vigente");
+   var row=picked.row, source="ANEEL · "+(row.DscREH||row.SigAgente||provider.name)+" · "+(row.DatInicioVigencia||"vigente");
+   var val={rate:picked.rate,source:source,label:"Tarifa B1 convencional encontrada na base oficial ANEEL: "+brl(picked.rate)+"/kWh, sem tributos/bandeira. Para custo final real, prefira “Da conta”."};
+   aneelCache[provider.q]=val;
+   var opt=sel.selectedOptions[0];opt.dataset.rate=val.rate;opt.dataset.source=val.source;hint.textContent=val.label;
+ }catch(err){
+   var opt=sel&&sel.selectedOptions[0];if(opt){delete opt.dataset.rate;delete opt.dataset.source}
+   hint.textContent="Não consegui obter a tarifa oficial desta distribuidora agora. Use “Da conta” ou Manual. O site não vai chutar um valor.";
+ }
+ calc();
+}
+
 var amazonCats={"Comidas e bebidas":10,"Indústria e Ciência":12,"Brinquedos e jogos":12,"Casa":12,"Papelaria e Escritório":13,"Ferramentas e Construção":11,"Eletrônicos portáteis":13,"Roupas e acessórios":14,"Joias":14,"Livros":15,"Demais categorias":15};
 var channels=[["direct","Venda direta"],["shopee","Shopee"],["mlclassic","ML Clássico"],["mlpremium","ML Premium"],["amazon","Amazon"],["magalu","Magalu"],["tiktok","TikTok Shop"]];
 
@@ -227,14 +303,13 @@ function showMode(){["suggest","profit","margin","markup"].forEach(function(m){$
 function updateDistributorOptions(){
  var uf=$("#stateSelect").value||"",city=$("#citySelect").value||"",sel=$("#distributorSelect");
  if(!sel)return;
- var refs=energyRefs[uf+"|"+city]||[];
- if(!refs.length){
-   sel.innerHTML='<option value="">Nenhuma tarifa verificada cadastrada para esta cidade</option>';
-   $("#energyRefHint").textContent="Não vou inventar uma tarifa estadual. Use “Da conta” (mais preciso) ou Manual.";
- }else{
-   sel.innerHTML='<option value="">Selecione sua distribuidora</option>'+refs.map(function(x){return '<option value="'+x.id+'" data-rate="'+x.rate+'" data-source="'+x.source+'">'+x.name+" · "+brl(x.rate)+"/kWh</option>"}).join("");
-   $("#energyRefHint").textContent="Escolha a distribuidora que aparece na sua conta. Os valores B1 são referências ANEEL sem tributos; a sua fatura continua sendo a opção mais precisa.";
- }
+ var list=providersByState[uf]||[];
+ sel.innerHTML='<option value="">Selecione sua distribuidora</option>'+list.map(function(x,i){
+   return '<option value="'+i+'">'+x.name+(x.manual?" · informar manualmente":"")+"</option>";
+ }).join("");
+ // Praia Grande: prioriza CPFL Piratininga conforme a distribuidora local mais comum; o usuário pode trocar.
+ if(uf==="SP"&&city==="Praia Grande"){sel.value="0";fetchAneelTariff(list[0]);}
+ else $("#energyRefHint").textContent="Escolha a distribuidora que aparece na sua conta. A tarifa é consultada na base oficial da ANEEL e não inclui tributos/bandeiras.";
  calc()
 }
 async function cities(uf){
@@ -274,7 +349,7 @@ function init(){
  $("#addPackagingPreset").onclick=function(){presets.packaging.push({id:id(),name:"Nova embalagem",unit:0});save();editor("packaging");renderSelects()};
  $("#addSupplyPreset").onclick=function(){presets.supplies.push({id:id(),name:"Novo insumo",unit:0});save();editor("supply");renderSelects()};
  $$(".energyMode").forEach(function(b){b.onclick=function(){state.energyMode=b.dataset.energy;$$(".energyMode").forEach(function(x){x.classList.toggle("active",x===b)});$("#energyBill").classList.toggle("hidden",state.energyMode!=="bill");$("#energyReference").classList.toggle("hidden",state.energyMode!=="reference");$("#energyManual").classList.toggle("hidden",state.energyMode!=="manual");calc()}});
- $("#stateSelect").onchange=function(){cities(this.value)};$("#citySelect").onchange=updateDistributorOptions;$("#distributorSelect").onchange=calc;
+ $("#stateSelect").onchange=function(){cities(this.value)};$("#citySelect").onchange=updateDistributorOptions;$("#distributorSelect").onchange=function(){var list=providersByState[$("#stateSelect").value]||[],p=list[+this.value];fetchAneelTariff(p)};
  $("#failurePreset").onchange=function(){$("#failureCustomWrap").classList.toggle("hidden",this.value!=="custom");calc()};$("#postProcess").onchange=function(){$("#postCustom").classList.toggle("hidden",this.value!=="custom");calc()};$("#lossReserve").onchange=function(){$("#lossCustom").classList.toggle("hidden",this.value!=="custom");calc()};
  $("#taxProfile").onchange=function(){$("#simplesBox").classList.toggle("hidden",this.value.indexOf("simples")!==0);calc()};$("#meiAllocate").onchange=function(){$("#meiOrdersWrap").classList.toggle("hidden",!this.checked);calc()};$("#adsOn").onchange=function(){$("#adsBox").classList.toggle("hidden",!this.checked);calc()};
  $$("[data-price-mode]").forEach(function(b){b.onclick=function(){state.priceMode=b.dataset.priceMode;$$("[data-price-mode]").forEach(function(x){x.classList.toggle("active",x===b)});showMode();calc()}});

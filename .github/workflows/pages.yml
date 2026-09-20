@@ -13,6 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify JavaScript syntax
+        run: node --check app.js
+      - name: Verify deterministic pricing math
+        run: python3 scripts/verify_math.py
+      - name: Verify required calculator functions
+        run: |
+          grep -q "function erate" app.js
+          grep -q "function resultAt" app.js
+          grep -q "function priceFor" app.js
+          grep -q "function productionSummary" app.js
       - name: Prepare site
         run: |
           mkdir -p dist

@@ -29,7 +29,7 @@ function load(){try{var x=JSON.parse(localStorage.getItem(KEY));return x?Object.
 function save(){localStorage.setItem(KEY,JSON.stringify(presets))}
 var presets=load();
 var state={
- mode:"equal",pieces:[{id:id(),name:"",weight:"",hours:"",minutes:0,qty:1,slicerCost:""}],energyMode:"bill",
+ mode:"equal",pieces:[{id:id(),name:"",weight:"",hours:"",minutes:0,qty:1,slicerCost:""}],energyMode:"reference",
  selectedFilament:presets.filaments[0]?presets.filaments[0].id:"",selectedPrinter:presets.printers[0]?presets.printers[0].id:"",
  packaging:[],supplies:[],channel:"direct",priceMode:"suggest",
  channelOpts:{amazonCategory:"Casa",amazonPlan:"individual",magaluPromo:false,magaluItemFee:false,tiktokShipping:false,tiktokAffiliate:0}
@@ -38,36 +38,36 @@ var ufs=["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","
 // Catálogo de distribuidoras por UF. Quando a UF tem uma única grande concessionária,
 // mantemos uma segunda opção "Outra distribuidora/permissionária" em vez de inventar uma empresa.
 var providersByState={
- AC:[{name:"Energisa Acre",q:"Energisa Acre"},{name:"Outra distribuidora / permissionária do Acre",manual:true}],
- AL:[{name:"Equatorial Alagoas",q:"Equatorial Alagoas"},{name:"Outra distribuidora / permissionária de Alagoas",manual:true}],
- AP:[{name:"CEA Equatorial",q:"CEA Equatorial"},{name:"Outra distribuidora / permissionária do Amapá",manual:true}],
- AM:[{name:"Amazonas Energia",q:"Amazonas Energia"},{name:"Outra distribuidora / permissionária do Amazonas",manual:true}],
- BA:[{name:"Neoenergia Coelba",q:"Coelba"},{name:"Sulgipe",q:"Sulgipe"}],
- CE:[{name:"Enel Ceará",q:"Enel Ceará"},{name:"Outra distribuidora / permissionária do Ceará",manual:true}],
- DF:[{name:"Neoenergia Brasília",q:"Neoenergia Brasília"},{name:"Outra distribuidora / permissionária do DF",manual:true}],
- ES:[{name:"EDP Espírito Santo",q:"EDP ES"},{name:"ELFSM / Santa Maria",q:"Santa Maria"}],
- GO:[{name:"Equatorial Goiás",q:"Equatorial Goiás"},{name:"Outra distribuidora / permissionária de Goiás",manual:true}],
- MA:[{name:"Equatorial Maranhão",q:"Equatorial Maranhão"},{name:"Outra distribuidora / permissionária do Maranhão",manual:true}],
- MT:[{name:"Energisa Mato Grosso",q:"Energisa Mato Grosso"},{name:"Outra distribuidora / permissionária de Mato Grosso",manual:true}],
- MS:[{name:"Energisa Mato Grosso do Sul",q:"Energisa Mato Grosso do Sul"},{name:"Neoenergia Elektro",q:"Elektro"}],
- MG:[{name:"Cemig-D",q:"CEMIG-D"},{name:"Energisa Minas Rio",q:"Energisa Minas Rio"},{name:"DMED Poços de Caldas",q:"DMED"}],
- PA:[{name:"Equatorial Pará",q:"Equatorial Pará"},{name:"Outra distribuidora / permissionária do Pará",manual:true}],
- PB:[{name:"Energisa Paraíba",q:"Energisa Paraíba"},{name:"Energisa Borborema",q:"Borborema"}],
- PR:[{name:"Copel Distribuição",q:"COPEL-DIS"},{name:"Forcel",q:"FORCEL"}],
- PE:[{name:"Neoenergia Pernambuco",q:"Neoenergia Pernambuco"},{name:"Outra distribuidora / permissionária de Pernambuco",manual:true}],
- PI:[{name:"Equatorial Piauí",q:"Equatorial Piauí"},{name:"Outra distribuidora / permissionária do Piauí",manual:true}],
- RJ:[{name:"Light",q:"LIGHT"},{name:"Enel Rio",q:"Enel RJ"},{name:"Energisa Nova Friburgo",q:"Nova Friburgo"}],
- RN:[{name:"Neoenergia Cosern",q:"COSERN"},{name:"Outra distribuidora / permissionária do Rio Grande do Norte",manual:true}],
- RS:[{name:"RGE",q:"RGE"},{name:"CEEE Equatorial",q:"CEEE-D"},{name:"Cooperativa / permissionária local",manual:true}],
- RO:[{name:"Energisa Rondônia",q:"Energisa Rondônia"},{name:"Outra distribuidora / permissionária de Rondônia",manual:true}],
- RR:[{name:"Roraima Energia",q:"Roraima Energia"},{name:"Outra distribuidora / permissionária de Roraima",manual:true}],
- SC:[{name:"Celesc Distribuição",q:"CELESC-DIS"},{name:"Energisa Santa Catarina",q:"Energisa Santa Catarina"},{name:"Cooperaliança",q:"Cooperaliança"}],
- SP:[{name:"CPFL Piratininga",q:"Piratininga"},{name:"Neoenergia Elektro",q:"Elektro"},{name:"CPFL Paulista",q:"Paulista"},{name:"Enel São Paulo",q:"Enel SP"},{name:"EDP São Paulo",q:"EDP SP"},{name:"Energisa Sul-Sudeste",q:"Sul-Sudeste"}],
- SE:[{name:"Energisa Sergipe",q:"Energisa Sergipe"},{name:"Sulgipe",q:"Sulgipe"}],
- TO:[{name:"Energisa Tocantins",q:"Energisa Tocantins"},{name:"Outra distribuidora / permissionária do Tocantins",manual:true}]
+ AC:[{name:"Energisa Acre",q:"Energisa Acre",aneelKey:"EAC"},{name:"Outra distribuidora / permissionária do Acre",manual:true}],
+ AL:[{name:"Equatorial Alagoas",q:"Equatorial Alagoas",aneelKey:"EQUATORIAL AL"},{name:"Outra distribuidora / permissionária de Alagoas",manual:true}],
+ AP:[{name:"CEA Equatorial",q:"CEA Equatorial",aneelKey:"CEA"},{name:"Outra distribuidora / permissionária do Amapá",manual:true}],
+ AM:[{name:"Âmbar Amazonas",q:"Âmbar Amazonas",aneelKey:"AMBAR AMAZONAS"},{name:"Outra distribuidora / permissionária do Amazonas",manual:true}],
+ BA:[{name:"Neoenergia Coelba",q:"Coelba",aneelKey:"COELBA"},{name:"Sulgipe",q:"Sulgipe",aneelKey:"SULGIPE"}],
+ CE:[{name:"Enel Ceará",q:"Enel Ceará",aneelKey:"ENEL CE"},{name:"Outra distribuidora / permissionária do Ceará",manual:true}],
+ DF:[{name:"Neoenergia Brasília",q:"Neoenergia Brasília",aneelKey:"NEOENERGIA BRASILIA"},{name:"Outra distribuidora / permissionária do DF",manual:true}],
+ ES:[{name:"EDP Espírito Santo",q:"EDP ES",aneelKey:"EDP ES"},{name:"ELFSM / Santa Maria",q:"ELFSM",aneelKey:"ELFSM"}],
+ GO:[{name:"Equatorial Goiás",q:"Equatorial Goiás",aneelKey:"EQUATORIAL GO"},{name:"Outra distribuidora / permissionária de Goiás",manual:true}],
+ MA:[{name:"Equatorial Maranhão",q:"Equatorial Maranhão",aneelKey:"EQUATORIAL MA"},{name:"Outra distribuidora / permissionária do Maranhão",manual:true}],
+ MT:[{name:"Energisa Mato Grosso",q:"Energisa Mato Grosso",aneelKey:"EMT"},{name:"Outra distribuidora / permissionária de Mato Grosso",manual:true}],
+ MS:[{name:"Energisa Mato Grosso do Sul",q:"Energisa Mato Grosso do Sul",aneelKey:"EMS"},{name:"Neoenergia Elektro",q:"Elektro",aneelKey:"ELEKTRO"}],
+ MG:[{name:"Cemig-D",q:"CEMIG-D",aneelKey:"CEMIG-D"},{name:"Energisa Minas Rio",q:"Energisa Minas Rio",aneelKey:"EMR"},{name:"DMED Poços de Caldas",q:"DMED",aneelKey:"DMED"}],
+ PA:[{name:"Equatorial Pará",q:"Equatorial Pará",aneelKey:"EQUATORIAL PA"},{name:"Outra distribuidora / permissionária do Pará",manual:true}],
+ PB:[{name:"Energisa Paraíba",q:"Energisa Paraíba",aneelKey:"EPB"},{name:"Energisa Borborema",q:"Borborema"}],
+ PR:[{name:"Copel Distribuição",q:"COPEL-DIS",aneelKey:"COPEL-DIS"},{name:"Forcel",q:"FORCEL"}],
+ PE:[{name:"Neoenergia Pernambuco",q:"Neoenergia Pernambuco",aneelKey:"NEOENERGIA PE"},{name:"Outra distribuidora / permissionária de Pernambuco",manual:true}],
+ PI:[{name:"Equatorial Piauí",q:"Equatorial Piauí",aneelKey:"EQUATORIAL PI"},{name:"Outra distribuidora / permissionária do Piauí",manual:true}],
+ RJ:[{name:"Light",q:"LIGHT",aneelKey:"LIGHT SESA"},{name:"Enel Rio",q:"Enel RJ",aneelKey:"ENEL RJ"},{name:"Energisa Nova Friburgo",q:"Nova Friburgo"}],
+ RN:[{name:"Neoenergia Cosern",q:"COSERN",aneelKey:"COSERN"},{name:"Outra distribuidora / permissionária do Rio Grande do Norte",manual:true}],
+ RS:[{name:"RGE",q:"RGE",aneelKey:"RGE"},{name:"CEEE Equatorial",q:"CEEE-D",aneelKey:"CEEE-D"},{name:"Cooperativa / permissionária local",manual:true}],
+ RO:[{name:"Energisa Rondônia",q:"Energisa Rondônia",aneelKey:"ERO"},{name:"Outra distribuidora / permissionária de Rondônia",manual:true}],
+ RR:[{name:"Âmbar Energia RR",q:"Âmbar Energia RR",aneelKey:"AMBAR ENERGIA RR"},{name:"Outra distribuidora / permissionária de Roraima",manual:true}],
+ SC:[{name:"Celesc Distribuição",q:"CELESC",aneelKey:"CELESC"},{name:"Energisa Santa Catarina",q:"Energisa Santa Catarina",aneelKey:"ESS"},{name:"Cooperaliança",q:"Cooperaliança",aneelKey:"COOPERALIANCA"}],
+ SP:[{name:"CPFL Piratininga",q:"Piratininga",aneelKey:"CPFL-PIRATINING"},{name:"Neoenergia Elektro",q:"Elektro",aneelKey:"ELEKTRO"},{name:"CPFL Paulista",q:"Paulista",aneelKey:"CPFL-PAULISTA"},{name:"Enel São Paulo",q:"Enel SP",aneelKey:"ELETROPAULO"},{name:"EDP São Paulo",q:"EDP SP",aneelKey:"EDP SP"},{name:"Energisa Sul-Sudeste",q:"Sul-Sudeste",aneelKey:"ESS"}],
+ SE:[{name:"Energisa Sergipe",q:"Energisa Sergipe",aneelKey:"ESE"},{name:"Sulgipe",q:"Sulgipe",aneelKey:"SULGIPE"}],
+ TO:[{name:"Energisa Tocantins",q:"Energisa Tocantins",aneelKey:"ETO"},{name:"Outra distribuidora / permissionária do Tocantins",manual:true}]
 };
 var tariffSnapshot=null;
-var tariffSnapshotPromise=fetch("./tariffs.json",{cache:"no-store"}).then(function(r){
+var tariffSnapshotPromise=fetch("./tariffs.json?v=20260920-150",{cache:"no-store"}).then(function(r){
  if(!r.ok)throw new Error("tariffs.json "+r.status);
  return r.json();
 }).then(function(j){tariffSnapshot=j;return j}).catch(function(){tariffSnapshot=null;return null});
@@ -77,6 +77,7 @@ function normKey(s){
 }
 function findTariffRecord(provider,snapshot){
  if(!provider||!snapshot||!snapshot.agents)return null;
+ if(provider.aneelKey && snapshot.agents[provider.aneelKey])return snapshot.agents[provider.aneelKey];
  var q=normKey(provider.q||provider.name), keys=Object.keys(snapshot.agents);
  var exact=keys.find(function(k){var nk=normKey(k);return nk===q||nk.indexOf(q)>=0||q.indexOf(nk)>=0});
  if(exact)return snapshot.agents[exact];
@@ -107,6 +108,19 @@ async function fetchAneelTariff(provider){
    hint.textContent="Não achei uma tarifa B1 vigente para esta distribuidora no snapshot oficial. Use “Da conta” ou Manual.";
  }
  calc();
+}
+
+function erate(){
+ if(state.energyMode==="bill"){
+   var v=num($("#billValue").value),k=num($("#billKwh").value);
+   return k>0?{rate:v/k,source:"pela sua conta · valor total ÷ kWh"}:{rate:0,source:"preencha valor e kWh da conta"};
+ }
+ if(state.energyMode==="manual"){
+   var m=num($("#manualKwh").value);
+   return{rate:m,source:m>0?"manual":"informe o R$/kWh"};
+ }
+ var sel=$("#distributorSelect"),opt=sel&&sel.selectedOptions?sel.selectedOptions[0]:null,rate=opt?num(opt.dataset.rate):0;
+ return rate>0?{rate:rate,source:opt.dataset.source||"ANEEL B1"}:{rate:0,source:"carregando / selecione a distribuidora"};
 }
 
 var amazonCats={"Comidas e bebidas":10,"Indústria e Ciência":12,"Brinquedos e jogos":12,"Casa":12,"Papelaria e Escritório":13,"Ferramentas e Construção":11,"Eletrônicos portáteis":13,"Roupas e acessórios":14,"Joias":14,"Livros":15,"Demais categorias":15};
@@ -272,7 +286,7 @@ function calc(){
  // O comparativo entre canais usa a MESMA meta de lucro líquido alcançada no canal principal.
  tp=r.profit;
  $("#resCost").textContent=brl(c.total);$("#resPrice").textContent=brl(price);$("#resReceived").textContent=brl(r.received);$("#resProfit").textContent=brl(r.profit);$("#resMargin").textContent=pc(r.margin);$("#resMarkup").textContent=pc(r.markup);
- $("#stickyChannel").textContent=channels.find(function(x){return x[0]===state.channel})[1];$("#stickyPrice").textContent=brl(price);
+ if($("#stickyChannel"))$("#stickyChannel").textContent=channels.find(function(x){return x[0]===state.channel})[1];if($("#stickyPrice"))$("#stickyPrice").textContent=brl(price);
  $("#costBreakdown").innerHTML=line("Filamento",c.filament)+line("Energia",c.energy)+line("Reserva manutenção",c.maintenance)+line("Pós-processamento",c.post)+line("Embalagens",c.packaging)+line("Insumos",c.supplies)+line("Frete",c.freight)+line("TOTAL",c.total);
  $("#feeBreakdown").innerHTML=line("Comissão ("+r.f.percent.toFixed(1)+"%)",price*r.f.percent/100)+line("Taxa fixa",r.f.fixed)+line("Extras do canal",r.f.extra)+line("Imposto",r.taxv)+line("CAC Ads",r.ads)+line("Reserva perdas",r.loss);
  var ff=presets.filaments.find(function(x){return x.id===state.selectedFilament}),cg=ff?ff.price/Math.max(1,ff.weight):0,er=erate();

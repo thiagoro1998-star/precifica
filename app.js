@@ -66,55 +66,45 @@ var providersByState={
  SE:[{name:"Energisa Sergipe",q:"Energisa Sergipe"},{name:"Sulgipe",q:"Sulgipe"}],
  TO:[{name:"Energisa Tocantins",q:"Energisa Tocantins"},{name:"Outra distribuidora / permissionária do Tocantins",manual:true}]
 };
-var ANEEL_RESOURCE="fcf2906c-7c32-4b9b-a637-054e7a5234f4";
-var aneelCache={};
+var tariffSnapshot=null;
+var tariffSnapshotPromise=fetch("./tariffs.json",{cache:"no-store"}).then(function(r){
+ if(!r.ok)throw new Error("tariffs.json "+r.status);
+ return r.json();
+}).then(function(j){tariffSnapshot=j;return j}).catch(function(){tariffSnapshot=null;return null});
 
-function parseAneelDate(v){
- if(!v)return null; var m=String(v).match(/(\d{2})\/(\d{2})\/(\d{4})/);
- if(m)return new Date(+m[3],+m[2]-1,+m[1]);
- var d=new Date(v); return isNaN(d)?null:d;
+function normKey(s){
+ return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 }
-function normalizeTariff(v){
- var n=num(v); if(n>20)n=n/1000; return n;
-}
-function pickAneelResidential(records){
- var today=new Date(), filtered=records.filter(function(r){
-   var sub=String(r.DscSubGrupo||"").toUpperCase(), mod=String(r.DscModalidadeTarifaria||"").toLowerCase(),
-       cls=(String(r.DscClasse||"")+" "+String(r.DscSubClasse||"")).toLowerCase(),
-       ini=parseAneelDate(r.DatInicioVigencia), fim=parseAneelDate(r.DatFimVigencia);
-   return sub==="B1" && mod.indexOf("convencional")>=0 && cls.indexOf("resid")>=0 &&
-     (!ini||ini<=today) && (!fim||fim>=today);
- });
- filtered.sort(function(a,b){return (parseAneelDate(b.DatInicioVigencia)||0)-(parseAneelDate(a.DatInicioVigencia)||0)});
- for(var i=0;i<filtered.length;i++){
-   var tusd=normalizeTariff(filtered[i].VlrTUSD),te=normalizeTariff(filtered[i].VlrTE),sum=tusd+te;
-   if(sum>0.1&&sum<5)return{rate:sum,row:filtered[i]};
- }
- return null;
+function findTariffRecord(provider,snapshot){
+ if(!provider||!snapshot||!snapshot.agents)return null;
+ var q=normKey(provider.q||provider.name), keys=Object.keys(snapshot.agents);
+ var exact=keys.find(function(k){var nk=normKey(k);return nk===q||nk.indexOf(q)>=0||q.indexOf(nk)>=0});
+ if(exact)return snapshot.agents[exact];
+ var words=q.match(/[A-Z0-9]{4,}/g)||[];
+ var scored=keys.map(function(k){
+   var nk=normKey(k),score=words.reduce(function(a,w){return a+(nk.indexOf(w)>=0?1:0)},0);
+   return{k:k,score:score}
+ }).sort(function(a,b){return b.score-a.score});
+ return scored.length&&scored[0].score>0?snapshot.agents[scored[0].k]:null;
 }
 async function fetchAneelTariff(provider){
  var sel=$("#distributorSelect"),hint=$("#energyRefHint");
  if(!provider||provider.manual){
    if(sel&&sel.selectedOptions[0]){delete sel.selectedOptions[0].dataset.rate;delete sel.selectedOptions[0].dataset.source}
-   hint.textContent="Para esta opção, informe o valor no modo Manual ou use “Da conta”. Não vou inventar uma tarifa.";
-   calc(); return;
+   hint.textContent="Para esta opção, use “Da conta” ou informe o valor manual. O Precifica não inventa tarifa.";
+   calc();return;
  }
- if(aneelCache[provider.q]){
-   var c=aneelCache[provider.q],opt=sel.selectedOptions[0];opt.dataset.rate=c.rate;opt.dataset.source=c.source;hint.textContent=c.label;calc();return;
- }
- hint.textContent="Consultando tarifa residencial B1 vigente na base oficial da ANEEL…";
- try{
-   var url="https://dadosabertos.aneel.gov.br/api/3/action/datastore_search?resource_id="+ANEEL_RESOURCE+"&limit=1000&q="+encodeURIComponent(provider.q);
-   var res=await fetch(url),json=await res.json(),records=json&&json.result&&json.result.records?json.result.records:[];
-   var picked=pickAneelResidential(records);
-   if(!picked)throw new Error("sem registro B1 vigente");
-   var row=picked.row, source="ANEEL · "+(row.DscREH||row.SigAgente||provider.name)+" · "+(row.DatInicioVigencia||"vigente");
-   var val={rate:picked.rate,source:source,label:"Tarifa B1 convencional encontrada na base oficial ANEEL: "+brl(picked.rate)+"/kWh, sem tributos/bandeira. Para custo final real, prefira “Da conta”."};
-   aneelCache[provider.q]=val;
-   var opt=sel.selectedOptions[0];opt.dataset.rate=val.rate;opt.dataset.source=val.source;hint.textContent=val.label;
- }catch(err){
+ hint.textContent="Carregando tarifa residencial B1 oficial da ANEEL…";
+ var snap=tariffSnapshot||await tariffSnapshotPromise;
+ var rec=findTariffRecord(provider,snap);
+ if(rec){
+   var opt=sel.selectedOptions[0];
+   opt.dataset.rate=rec.rate;
+   opt.dataset.source="ANEEL · "+rec.sigAgente+" · "+(rec.start||"vigente");
+   hint.textContent="ANEEL B1 convencional: TUSD "+brl(rec.tusd)+"/kWh + TE "+brl(rec.te)+"/kWh = "+brl(rec.rate)+"/kWh. Sem tributos e bandeira. Para o custo final da sua casa, “Da conta” continua mais preciso.";
+ }else{
    var opt=sel&&sel.selectedOptions[0];if(opt){delete opt.dataset.rate;delete opt.dataset.source}
-   hint.textContent="Não consegui obter a tarifa oficial desta distribuidora agora. Use “Da conta” ou Manual. O site não vai chutar um valor.";
+   hint.textContent="Não achei uma tarifa B1 vigente para esta distribuidora no snapshot oficial. Use “Da conta” ou Manual.";
  }
  calc();
 }
@@ -308,8 +298,11 @@ function updateDistributorOptions(){
    return '<option value="'+i+'">'+x.name+(x.manual?" · informar manualmente":"")+"</option>";
  }).join("");
  // Praia Grande: prioriza CPFL Piratininga conforme a distribuidora local mais comum; o usuário pode trocar.
- if(uf==="SP"&&city==="Praia Grande"){sel.value="0";fetchAneelTariff(list[0]);}
- else $("#energyRefHint").textContent="Escolha a distribuidora que aparece na sua conta. A tarifa é consultada na base oficial da ANEEL e não inclui tributos/bandeiras.";
+ if(uf==="SP"&&city==="Praia Grande"){
+   var ix=list.findIndex(function(x){return normKey(x.q).indexOf("PIRATINING")>=0});
+   sel.value=String(ix>=0?ix:0);
+   fetchAneelTariff(list[ix>=0?ix:0]);
+ } else $("#energyRefHint").textContent="Escolha a distribuidora que aparece na sua conta. A tarifa vem de um snapshot oficial da ANEEL hospedado junto com o site, sem depender de CORS.";
  calc()
 }
 async function cities(uf){
@@ -338,6 +331,9 @@ function editor(kind){
 }
 function init(){
  renderPieces();renderSelects();renderMarkets();stateInit();
+ document.querySelectorAll('input[type="number"]').forEach(function(el){el.setAttribute("inputmode","decimal")});
+ document.addEventListener("focusin",function(e){if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))document.body.classList.add("typing")});
+ document.addEventListener("focusout",function(){setTimeout(function(){if(!document.activeElement||!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))document.body.classList.remove("typing")},80)});
  $$("[data-mode]").forEach(function(b){b.onclick=function(){state.mode=b.dataset.mode;$$("[data-mode]").forEach(function(x){x.classList.toggle("active",x===b)});if(state.mode==="equal")state.pieces=state.pieces.slice(0,1);renderPieces();calc()}});
  $("#addPiece").onclick=function(){state.pieces.push({id:id(),name:"",weight:"",hours:"",minutes:0,qty:1,slicerCost:""});state.mode="different";$$("[data-mode]").forEach(function(x){x.classList.toggle("active",x.dataset.mode==="different")});renderPieces();calc()};
  $("#filamentPreset").onchange=function(){state.selectedFilament=this.value;calc()};$("#printerPreset").onchange=function(){state.selectedPrinter=this.value;syncPrinter();calc()};

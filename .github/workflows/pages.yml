@@ -17,12 +17,18 @@ jobs:
         run: node --check app.js
       - name: Verify deterministic pricing math
         run: python3 scripts/verify_math.py
+      - name: Install UI test dependency
+        run: npm install --no-save jsdom@24
+      - name: Run browser-like UI smoke test
+        run: node scripts/smoke_ui.mjs
       - name: Verify required calculator functions
         run: |
           grep -q "function erate" app.js
           grep -q "function resultAt" app.js
           grep -q "function priceFor" app.js
           grep -q "function productionSummary" app.js
+          grep -q "function failRate" app.js
+          grep -q "function post" app.js
       - name: Prepare site
         run: |
           mkdir -p dist

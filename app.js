@@ -205,6 +205,17 @@ function renderChannel(){
  var ts=$("#tiktokShipping");if(ts)ts.onchange=function(){state.channelOpts.tiktokShipping=ts.checked;calc()};
  var ta=$("#tiktokAffiliate");if(ta)ta.oninput=function(){state.channelOpts.tiktokAffiliate=num(ta.value);calc()};
 }
+function failRate(){
+ var el=$("#failurePreset");
+ if(!el)return 0;
+ return el.value==="custom"?num($("#failureCustom")&&$("#failureCustom").value):num(el.value);
+}
+function post(){
+ var el=$("#postProcess");
+ if(!el)return 0;
+ return el.value==="custom"?num($("#postCustom")&&$("#postCustom").value):num(el.value);
+}
+
 function productionSummary(){
  var f=presets.filaments.find(function(x){return x.id===state.selectedFilament}),cg=f?f.price/Math.max(1,f.weight):0,e=erate(),
      watts=num($("#printerWatts").value),maintRate=num($("#maintenanceHour").value),fail=1+failRate()/100;
@@ -273,6 +284,7 @@ function target(){
 }
 function line(k,v){return '<div class="line"><span class="muted">'+k+'</span><b>'+brl(v)+"</b></div>"}
 function calc(){
+ try{
  var fil=presets.filaments.find(function(x){return x.id===state.selectedFilament});if(fil){$("#filPrice").textContent=brl(fil.price);$("#filWeight").textContent=fil.weight+" g";$("#filCostG").textContent=brl(fil.price/Math.max(1,fil.weight))+"/g";$("#material").value=fil.material||"PLA"}
  var e=erate(),c=costs();$("#kwhUsed").textContent=brl(e.rate)+"/kWh";$("#kwhSource").textContent=e.source;$("#energyCost").textContent=brl(c.projectEnergy);
  var tx=tax();if($("#taxProfile").value.indexOf("simples")===0)$("#simplesRate").value=tx.rate.toFixed(2).replace(".",",")+"%";$("#taxInfo").innerHTML="<b>"+tx.note+"</b><br>Taxa de marketplace é calculada separadamente e não é imposto.";
@@ -302,6 +314,11 @@ function calc(){
  $("#priceChoices").innerHTML=sc.map(function(x){return '<button class="choice" data-scenario="'+x[1]+'"><div class="lab">'+x[0]+'</div><div class="price">'+brl(priceFor(x[1],state.channel))+"</div></button>"}).join("");
  $$("[data-scenario]").forEach(function(b){b.onclick=function(){state.priceMode="profit";$$("[data-price-mode]").forEach(function(x){x.classList.toggle("active",x.dataset.priceMode==="profit")});showMode();$("#targetProfit").value=b.dataset.scenario;calc()}});
  $("#compareBody").innerHTML=channels.map(function(x){var p=priceFor(tp,x[0]),rr=resultAt(p,x[0]),mm=meta(x[0]);return "<tr><td><b>"+x[1]+"</b></td><td>"+brl(p)+"</td><td>"+brl(rr.f.total)+"</td><td>"+brl(rr.received)+'</td><td class="good"><b>'+brl(rr.profit)+"</b></td><td>"+pc(rr.margin)+'</td><td><span class="badge '+(mm[0]==="Alta"?"h":"")+'">'+mm[0]+"</span></td></tr>"}).join("");
+ }catch(err){
+   console.error("Precifica calc error",err);
+   var audit=$("#auditCalc");
+   if(audit) audit.innerHTML="<b>Erro interno de cálculo.</b> A versão foi bloqueada para evitar exibir números inconsistentes. Recarregue a página; se persistir, reporte o texto: <code>"+String(err&&err.message||err)+"</code>";
+ }
 }
 function showMode(){["suggest","profit","margin","markup"].forEach(function(m){$("#"+m+"Box").classList.toggle("hidden",state.priceMode!==m)})}
 function updateDistributorOptions(){
@@ -344,6 +361,8 @@ function editor(kind){
  $$("[data-lotp],[data-lotq]").forEach(function(el){el.oninput=function(e){var k=e.target.dataset.lotp||e.target.dataset.lotq,i=+e.target.dataset.i,p=num(document.querySelector('[data-lotp="'+k+'"][data-i="'+i+'"]').value),q=num(document.querySelector('[data-lotq="'+k+'"][data-i="'+i+'"]').value),out=document.querySelector('[data-lotr="'+k+'"][data-i="'+i+'"]');if(q>0){var u=p/q;out.innerHTML="Custo unitário: <b>"+brl(u)+'</b> <button class="btn" style="padding:5px 8px" data-useunit>Usar</button>';out.querySelector("[data-useunit]").onclick=function(){var kk=k==="packaging"?"packaging":"supplies";presets[kk][i].unit=u;save();editor(k);renderSelects();calc()}}else out.textContent="Preencha os dois campos."}});
 }
 function init(){
+ var lossEl=$("#lossReserve");if(lossEl)lossEl.value="0";
+ var failureEl=$("#failurePreset");if(failureEl)failureEl.value="0";
  renderPieces();renderSelects();renderMarkets();stateInit();
  document.querySelectorAll('input[type="number"]').forEach(function(el){el.setAttribute("inputmode","decimal")});
  document.addEventListener("focusin",function(e){if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))document.body.classList.add("typing")});

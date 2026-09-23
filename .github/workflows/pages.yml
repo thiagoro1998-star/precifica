@@ -2,7 +2,7 @@ name: Publish Precifica 3D
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "feature/radar-mercado"]
   workflow_dispatch:
 
 permissions:
@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   publish:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/radar-mercado'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,10 +33,11 @@ jobs:
       - name: Prepare site
         run: |
           mkdir -p dist
-          cp index.html style.css app.js dist/
+          cp index.html style.css app.js market.js dist/
       - name: Build current ANEEL residential tariff snapshot
         run: python3 scripts/build_tariffs.py
       - name: Publish gh-pages branch
+        if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

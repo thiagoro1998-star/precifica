@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">\n<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n<meta http-equiv="Pragma" content="no-cache">\n<meta http-equiv="Expires" content="0">
 <title>Precifica 3D</title>
 <meta name="description" content="Calculadora profissional de precificação para impressão 3D">
-<link rel="stylesheet" href="./style.css?v=1.6.0">
+<link rel="stylesheet" href="./style.css?v=1.7.0">
 </head>
 <body>
 <div class="app">
@@ -114,9 +114,39 @@
         <div class="muted" style="margin-top:12px">Regras principais: Mercado Livre — Universidade de Vendedores; Amazon Brasil — tabela oficial por categoria; TikTok Shop Seller University. Shopee e algumas condições Magalu aparecem como referência quando a grade pública não é única/estável.</div>
       </div>
     </section>
+
+    <section class="card span2" id="marketSection">
+      <div class="ch"><div class="num">08</div><div><h2>Radar de Mercado</h2><div class="muted">Compare seu custo real com anúncios reais — sem preço inventado e sem “IA chutando”.</div></div></div>
+      <div class="cb">
+        <div class="note"><b>O que este módulo faz:</b> usa referências que você realmente observou no mercado, registra fonte + data e cruza esses preços com o mesmo motor de custos e taxas do Precifica. Preço anunciado, frete, faturamento e lucro ficam separados.</div>
+        <div class="market-summary-grid" style="margin-top:13px">
+          <div class="stat"><div class="k">Referências válidas</div><div class="v" id="marketCount">0</div></div>
+          <div class="stat a"><div class="k">Preço mediano</div><div class="v" id="marketMedian">—</div></div>
+          <div class="stat"><div class="k">Menor → maior</div><div class="v" id="marketRange">—</div></div>
+          <div class="stat"><div class="k">Preço médio</div><div class="v" id="marketAverage">—</div></div>
+        </div>
+        <div id="marketMath" class="box" style="margin-top:13px"></div>
+        <div class="box" style="margin-top:13px">
+          <div class="market-section-head"><div><h3 class="title">Referências reais</h3><div class="hint">Use vários anúncios semelhantes. Uma referência isolada não representa o mercado.</div></div><div class="inline"><button class="btn" id="marketAddRef">+ Adicionar referência</button><button class="btn" id="marketClear">Limpar</button></div></div>
+          <div id="marketRefs" style="margin-top:10px"></div>
+        </div>
+        <div class="box" style="margin-top:13px"><h3 class="title">Distribuição observada</h3><div id="marketDetail"></div></div>
+        <div class="market-actions"><button class="btn primary" id="marketSaveProduct">Salvar cálculo no meu catálogo</button><button class="btn" id="marketExport">Exportar dados de negócio</button></div>
+        <div class="neutral" style="margin-top:12px"><b>Nosso diferencial:</b> em vez de comparar só “meu anúncio x 1 concorrente”, o Radar trabalha com uma amostra, mostra mediana e quartis e depois calcula quanto realmente sobraria para você em cada preço. IA pode entrar depois para interpretação, mas a base matemática continua auditável.</div>
+      </div>
+    </section>
+
+    <section class="card span2" id="catalogSection">
+      <div class="ch"><div class="num">09</div><div><h2>Meu Catálogo de Rentabilidade</h2><div class="muted">Fotografias dos produtos que você já precificou. Salvo apenas neste navegador por enquanto.</div></div></div>
+      <div class="cb">
+        <div class="market-kpis" id="catalogStats"></div>
+        <div class="table" style="margin-top:13px"><table><thead><tr><th>Produto</th><th>Canal</th><th>Custo</th><th>Preço</th><th>Lucro/un.</th><th>Margem</th><th>Lucro/h</th><th></th></tr></thead><tbody id="catalogRows"></tbody></table></div>
+        <div class="hint" style="margin-top:10px">As médias acima são médias simples dos snapshots salvos; não são faturamento real até você registrar vendas. Essa estrutura já prepara a futura camada de estoque, pedidos e financeiro.</div>
+      </div>
+    </section>
   </div>
   
-  <div class="footer">Precifica 3D · motor 1.6.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+  <div class="footer">Precifica 3D · motor 1.7.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
 </div>
 
 <div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>
@@ -124,5 +154,5 @@
 <div class="modal" id="packagingModal"><div class="modalBox"><div class="modalHead"><h3>Catálogo de embalagens</h3><button class="icon" data-close>✕</button></div><div id="packagingEditor"></div><button class="btn primary" id="addPackagingPreset">+ Nova embalagem</button></div></div>
 <div class="modal" id="supplyModal"><div class="modalBox"><div class="modalHead"><h3>Catálogo de insumos</h3><button class="icon" data-close>✕</button></div><div id="supplyEditor"></div><button class="btn primary" id="addSupplyPreset">+ Novo insumo</button></div></div>
 
-<script src="./app.js?v=1.6.0"></script>
+<script src="./app.js?v=1.6.0"></script>\n<script src="./market.js?v=1.7.0"></script>
 </body></html>

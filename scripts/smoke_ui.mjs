@@ -2,8 +2,10 @@ import fs from "node:fs";
 import {JSDOM} from "jsdom";
 
 const html=fs.readFileSync("index.html","utf8")
-  .replace(/<script[^>]*src="\.\/app\.js[^"]*"[^>]*><\/script>/,"");
+  .replace(/<script[^>]*src="\.\/app\.js[^"]*"[^>]*><\/script>/,"")
+  .replace(/<script[^>]*src="\.\/market\.js[^"]*"[^>]*><\/script>/,"");
 const app=fs.readFileSync("app.js","utf8");
+const market=fs.readFileSync("market.js","utf8");
 
 const dom=new JSDOM(html,{runScripts:"outside-only",url:"https://example.test/precifica/"});
 const {window}=dom;
@@ -24,9 +26,12 @@ window.fetch=async (url)=>{
   throw new Error("Unexpected fetch "+u);
 };
 window.alert=()=>{};
+window.confirm=()=>true;
+window.HTMLElement.prototype.scrollIntoView=()=>{};
 
 window.eval(app);
-await new Promise(r=>setTimeout(r,80));
+window.eval(market);
+await new Promise(r=>setTimeout(r,100));
 
 const q=(s)=>window.document.querySelector(s);
 const qa=(s)=>[...window.document.querySelectorAll(s)];
@@ -67,5 +72,33 @@ await new Promise(r=>setTimeout(r,10));
 assert(q("#priceChoices").children.length===5,"quick scenarios disappeared on Shopee");
 assert(q("#compareBody").children.length===7,"comparison rows disappeared on Shopee");
 assert(!q("#auditCalc").textContent.includes("Erro interno"),"calculation error after Shopee selection");
+
+// Radar de Mercado: deterministic statistics + current calculator integration.
+assert(q("#marketSection"),"market section missing");
+assert(q("#catalogSection"),"catalog section missing");
+assert(window.PrecificaMarket,"market module not initialized");
+assert(window.PrecificaMarket.median([10,20,30])===20,"median calculation wrong");
+assert(window.PrecificaMarket.quantile([10,20,30,40],.25)===17.5,"P25 calculation wrong");
+assert(window.PrecificaMarket.quantile([10,20,30,40],.75)===32.5,"P75 calculation wrong");
+
+for(const p of [20,30,40]){
+  q("#marketAddRef").click();
+  const refs=qa(".market-ref");
+  const ref=refs[refs.length-1];
+  const price=ref.querySelector('[data-mf="price"]');
+  price.value=String(p);price.dispatchEvent(new window.Event("input",{bubbles:true}));
+}
+await new Promise(r=>setTimeout(r,20));
+assert(q("#marketCount").textContent==="3","market valid-reference count wrong");
+assert(q("#marketMedian").textContent.includes("30,00"),"market median UI wrong");
+assert(q("#marketDetail").textContent.includes("P25"),"market distribution table missing");
+assert(q("#marketMath").textContent.includes("Ponto de equilíbrio"),"market break-even analysis missing");
+
+// Saving a calculated product must create a catalog snapshot.
+q("#projectName").value="Quebra-cabeça teste";
+q("#marketSaveProduct").click();
+await new Promise(r=>setTimeout(r,10));
+assert(q("#catalogRows").children.length===1,"catalog snapshot was not saved");
+assert(q("#catalogRows").textContent.includes("Quebra-cabeça teste"),"catalog product name missing");
 
 console.log("UI smoke verification: OK");

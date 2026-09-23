@@ -38,7 +38,7 @@ def parse_num(v):
     return n
 
 print("Downloading ANEEL tariff dataset...", file=sys.stderr)
-with urllib.request.urlopen(URL, timeout=180) as r:
+with urllib.request.urlopen(URL, timeout=20) as r:
     raw = r.read()
 
 text = raw.decode("utf-8-sig", errors="replace")

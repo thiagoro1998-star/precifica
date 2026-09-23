@@ -3,9 +3,11 @@ import {JSDOM} from "jsdom";
 
 const html=fs.readFileSync("index.html","utf8")
   .replace(/<script[^>]*src="\.\/app\.js[^"]*"[^>]*><\/script>/,"")
-  .replace(/<script[^>]*src="\.\/market\.js[^"]*"[^>]*><\/script>/,"");
+  .replace(/<script[^>]*src="\.\/market\.js[^"]*"[^>]*><\/script>/,"")
+  .replace(/<script[^>]*src="\.\/ui\.js[^"]*"[^>]*><\/script>/,"");
 const app=fs.readFileSync("app.js","utf8");
 const market=fs.readFileSync("market.js","utf8");
+const ui=fs.readFileSync("ui.js","utf8");
 
 const dom=new JSDOM(html,{runScripts:"outside-only",url:"https://example.test/precifica/"});
 const {window}=dom;
@@ -31,11 +33,24 @@ window.HTMLElement.prototype.scrollIntoView=()=>{};
 
 window.eval(app);
 window.eval(market);
+window.eval(ui);
 await new Promise(r=>setTimeout(r,100));
 
 const q=(s)=>window.document.querySelector(s);
 const qa=(s)=>[...window.document.querySelectorAll(s)];
 function assert(cond,msg){if(!cond)throw new Error(msg)}
+
+// Workspace navigation: calculator, market and catalog must be isolated in intuitive tabs.
+assert(q(".side-nav"),"left workspace navigation missing");
+assert(qa("[data-workspace-tab]").length===3,"expected 3 workspace tabs");
+assert(window.document.body.dataset.workspace==="calc","calculator must be the default workspace");
+assert(!q("#workspaceGrid > section").classList.contains("workspace-hidden"),"calculator section hidden on startup");
+assert(q("#marketSection").classList.contains("workspace-hidden"),"market should be hidden on calculator tab");
+q('[data-workspace-tab="market"]').click();
+assert(window.document.body.dataset.workspace==="market","market tab did not activate");
+assert(!q("#marketSection").classList.contains("workspace-hidden"),"market section stayed hidden");
+assert(q("#workspaceGrid > section").classList.contains("workspace-hidden"),"calculator stayed visible on market tab");
+window.PrecificaUI.activate("calc",{scroll:false});
 
 // Basic UI smoke: calculators must populate instead of staying blank.
 assert(q("#priceChoices"),"priceChoices missing");
@@ -100,5 +115,7 @@ q("#marketSaveProduct").click();
 await new Promise(r=>setTimeout(r,10));
 assert(q("#catalogRows").children.length===1,"catalog snapshot was not saved");
 assert(q("#catalogRows").textContent.includes("Quebra-cabeça teste"),"catalog product name missing");
+assert(window.document.body.dataset.workspace==="catalog","saving from Radar should open catalog tab");
+assert(!q("#catalogSection").classList.contains("workspace-hidden"),"catalog section stayed hidden after save");
 
 console.log("UI smoke verification: OK");

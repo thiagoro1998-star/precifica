@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">\n<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n<meta http-equiv="Pragma" content="no-cache">\n<meta http-equiv="Expires" content="0">
 <title>Precifica 3D</title>
 <meta name="description" content="Calculadora profissional de precificação para impressão 3D">
-<link rel="stylesheet" href="./style.css?v=1.7.0">
+<link rel="stylesheet" href="./style.css?v=1.8.0">
 </head>
 <body>
 <div class="app">
@@ -16,7 +16,24 @@
     </div>
   </div>
 
-  <div class="grid">
+  <div class="workspace">
+    <aside class="side-nav" aria-label="Áreas do Precifica">
+      <div class="side-nav-title">ÁREAS</div>
+      <div class="side-tabs" role="tablist" aria-orientation="vertical">
+        <button class="side-tab active" data-workspace-tab="calc" role="tab" aria-selected="true">
+          <span class="side-tab-key">P</span><span class="side-tab-copy"><strong>Precificação</strong><small>Projeto, custos e preço</small></span>
+        </button>
+        <button class="side-tab" data-workspace-tab="market" role="tab" aria-selected="false">
+          <span class="side-tab-key">M</span><span class="side-tab-copy"><strong>Mercado</strong><small>Referências e comparação</small></span>
+        </button>
+        <button class="side-tab" data-workspace-tab="catalog" role="tab" aria-selected="false">
+          <span class="side-tab-key">C</span><span class="side-tab-copy"><strong>Catálogo</strong><small>Produtos e rentabilidade</small></span>
+        </button>
+      </div>
+      <div class="side-nav-help">Os cálculos continuam conectados entre as áreas.</div>
+    </aside>
+    <main class="workspace-main">
+      <div class="grid" id="workspaceGrid">
     <section class="card span2">
       <div class="ch"><div class="num">01</div><div><h2>Projeto e peças</h2><div class="muted">Informe o que o fatiador mostra. Para kits/quebra-cabeças, some os fatiamentos que formam um único produto final.</div></div></div>
       <div class="cb">
@@ -144,9 +161,11 @@
         <div class="hint" style="margin-top:10px">As médias acima são médias simples dos snapshots salvos; não são faturamento real até você registrar vendas. Essa estrutura já prepara a futura camada de estoque, pedidos e financeiro.</div>
       </div>
     </section>
+      </div>
+    </main>
   </div>
   
-  <div class="footer">Precifica 3D · motor 1.7.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+  <div class="footer">Precifica 3D · motor 1.8.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
 </div>
 
 <div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>
@@ -154,5 +173,7 @@
 <div class="modal" id="packagingModal"><div class="modalBox"><div class="modalHead"><h3>Catálogo de embalagens</h3><button class="icon" data-close>✕</button></div><div id="packagingEditor"></div><button class="btn primary" id="addPackagingPreset">+ Nova embalagem</button></div></div>
 <div class="modal" id="supplyModal"><div class="modalBox"><div class="modalHead"><h3>Catálogo de insumos</h3><button class="icon" data-close>✕</button></div><div id="supplyEditor"></div><button class="btn primary" id="addSupplyPreset">+ Novo insumo</button></div></div>
 
-<script src="./app.js?v=1.6.0"></script>\n<script src="./market.js?v=1.7.0"></script>
+<script src="./app.js?v=1.6.0"></script>
+<script src="./market.js?v=1.7.0"></script>
+<script src="./ui.js?v=1.8.0"></script>
 </body></html>

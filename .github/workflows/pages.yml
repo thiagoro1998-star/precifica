@@ -33,9 +33,12 @@ jobs:
       - name: Prepare site
         run: |
           mkdir -p dist
-          cp index.html style.css app.js market.js dist/
-      - name: Build current ANEEL residential tariff snapshot
+          cp index.html style.css app.js market.js tariffs.json dist/
+      - name: Refresh ANEEL residential tariff snapshot
+        continue-on-error: true
         run: python3 scripts/build_tariffs.py
+      - name: Verify tariff fallback exists
+        run: test -s dist/tariffs.json
       - name: Publish gh-pages branch
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4

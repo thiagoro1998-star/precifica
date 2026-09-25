@@ -33,7 +33,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir -p dist
-          cp index.html style.css app.js market.js ui.js tariffs.json dist/
+          cp index.html style.css app.js market.js ui.js tariffs.json favicon.svg dist/
       - name: Refresh ANEEL residential tariff snapshot
         continue-on-error: true
         run: python3 scripts/build_tariffs.py

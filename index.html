@@ -9,32 +9,43 @@
 <meta http-equiv="Expires" content="0">
 <title>Precifica 3D</title>
 <meta name="description" content="Calculadora profissional de precificação para impressão 3D">
-<link rel="stylesheet" href="./style.css?v=1.9.0">
+<link rel="stylesheet" href="./style.css?v=1.10.0">
 </head>
 <body>
 <div class="app">
   <div class="top">
     <div class="head">
-      <div class="brand"><div class="logo">3D</div><div><h1>Precifica 3D</h1><div class="muted">Custo real, preço por canal e lucro líquido.</div></div></div>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="img">
+            <path class="mark-shell" d="M24 3.8 41.6 14v20L24 44.2 6.4 34V14L24 3.8Z"/>
+            <path class="mark-layer mark-layer-1" d="m12 16.2 12-6.9 12 6.9-12 6.9-12-6.9Z"/>
+            <path class="mark-layer mark-layer-2" d="m12 23.7 12 6.9 12-6.9v5.7l-12 6.9-12-6.9v-5.7Z"/>
+            <path class="mark-calc" d="M31.2 28.4h5.3v8.1h-5.3z"/>
+            <path class="mark-eq" d="M32.4 31.1h2.9M32.4 33.7h2.9"/>
+          </svg>
+        </div>
+        <div class="brand-copy"><h1>Precifica <span>3D</span></h1><div class="muted">Custo real, preço por canal e lucro líquido.</div></div>
+      </div>
       <div class="actions"><button class="btn" id="exportBtn">Exportar presets</button><button class="btn" id="importBtn">Importar</button><input id="importFile" type="file" accept="application/json" hidden><button class="btn primary" id="resetBtn">Novo cálculo</button></div>
     </div>
   </div>
 
   <div class="workspace">
     <aside class="side-nav" aria-label="Áreas do Precifica">
-      <div class="side-nav-title">ÁREAS</div>
+      <div class="side-nav-title">MENU</div>
       <div class="side-tabs" role="tablist" aria-orientation="vertical">
         <button class="side-tab active" data-workspace-tab="calc" role="tab" aria-selected="true">
-          <span class="side-tab-key">P</span><span class="side-tab-copy"><strong>Precificação</strong><small>Projeto, custos e preço</small></span>
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="M8 8h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg></span><span class="side-tab-copy"><strong>Precificação</strong><small>Projeto, custos e preço</small></span>
         </button>
         <button class="side-tab" data-workspace-tab="market" role="tab" aria-selected="false">
-          <span class="side-tab-key">M</span><span class="side-tab-copy"><strong>Mercado</strong><small>Referências e comparação</small></span>
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-8"/><path d="M3 19h18"/></svg></span><span class="side-tab-copy"><strong>Mercado</strong><small>Referências e comparação</small></span>
         </button>
         <button class="side-tab" data-workspace-tab="catalog" role="tab" aria-selected="false">
-          <span class="side-tab-key">C</span><span class="side-tab-copy"><strong>Catálogo</strong><small>Produtos e rentabilidade</small></span>
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12.1V21"/></svg></span><span class="side-tab-copy"><strong>Catálogo</strong><small>Produtos e rentabilidade</small></span>
         </button>
       </div>
-      <div class="side-nav-help">Os cálculos continuam conectados entre as áreas.</div>
+      <div class="side-nav-help"><span class="status-dot"></span><div><b>Motor ativo</b><small>Custos, taxas e mercado conectados.</small></div></div>
     </aside>
     <main class="workspace-main">
       <div class="grid" id="workspaceGrid">
@@ -169,7 +180,7 @@
     </main>
   </div>
   
-  <div class="footer">Precifica 3D · motor 1.9.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+  <div class="footer">Precifica 3D · motor 1.10.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
 </div>
 
 <div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>

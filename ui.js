@@ -12,6 +12,7 @@ function sections(){
 function assignViews(){
   sections().forEach(function(el){
     if(el.id==="marketSection") el.dataset.workspaceView="market";
+    else if(el.id==="consignmentSection") el.dataset.workspaceView="consignment";
     else if(el.id==="catalogSection") el.dataset.workspaceView="catalog";
     else el.dataset.workspaceView="calc";
   });
@@ -33,6 +34,9 @@ function activate(view,opts){
   document.body.dataset.workspace=view;
   if(view==="market" && window.PrecificaMarket && typeof window.PrecificaMarket.render==="function"){
     window.PrecificaMarket.render();
+  }
+  if(view==="consignment" && window.PrecificaConsignment && typeof window.PrecificaConsignment.render==="function"){
+    window.PrecificaConsignment.render();
   }
   if(opts.scroll!==false){
     var main=document.querySelector(".workspace-main");

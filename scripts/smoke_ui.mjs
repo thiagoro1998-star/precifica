@@ -4,9 +4,13 @@ import {JSDOM} from "jsdom";
 const html=fs.readFileSync("index.html","utf8")
   .replace(/<script[^>]*src="\.\/app\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/market\.js[^"]*"[^>]*><\/script>/,"")
+  .replace(/<script[^>]*src="\.\/consignment-math\.js[^"]*"[^>]*><\/script>/,"")
+  .replace(/<script[^>]*src="\.\/consignment\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/ui\.js[^"]*"[^>]*><\/script>/,"");
 const app=fs.readFileSync("app.js","utf8");
 const market=fs.readFileSync("market.js","utf8");
+const consMath=fs.readFileSync("consignment-math.js","utf8");
+const cons=fs.readFileSync("consignment.js","utf8");
 const ui=fs.readFileSync("ui.js","utf8");
 
 const dom=new JSDOM(html,{runScripts:"outside-only",url:"https://example.test/precifica/"});
@@ -33,6 +37,8 @@ window.HTMLElement.prototype.scrollIntoView=()=>{};
 
 window.eval(app);
 window.eval(market);
+window.eval(consMath);
+window.eval(cons);
 window.eval(ui);
 await new Promise(r=>setTimeout(r,100));
 
@@ -42,7 +48,7 @@ function assert(cond,msg){if(!cond)throw new Error(msg)}
 
 // Workspace navigation: calculator, market and catalog must be isolated in intuitive tabs.
 assert(q(".side-nav"),"left workspace navigation missing");
-assert(qa("[data-workspace-tab]").length===3,"expected 3 workspace tabs");
+assert(qa("[data-workspace-tab]").length===4,"expected 4 workspace tabs");
 assert(window.document.body.dataset.workspace==="calc","calculator must be the default workspace");
 assert(!q("#workspaceGrid > section").classList.contains("workspace-hidden"),"calculator section hidden on startup");
 assert(q("#marketSection").classList.contains("workspace-hidden"),"market should be hidden on calculator tab");
@@ -50,6 +56,9 @@ q('[data-workspace-tab="market"]').click();
 assert(window.document.body.dataset.workspace==="market","market tab did not activate");
 assert(!q("#marketSection").classList.contains("workspace-hidden"),"market section stayed hidden");
 assert(q("#workspaceGrid > section").classList.contains("workspace-hidden"),"calculator stayed visible on market tab");
+q('[data-workspace-tab="consignment"]').click();
+assert(window.document.body.dataset.workspace==="consignment","consignment tab did not activate");
+assert(!q("#consignmentSection").classList.contains("workspace-hidden"),"consignment section stayed hidden");
 window.PrecificaUI.activate("calc",{scroll:false});
 
 // Basic UI smoke: calculators must populate instead of staying blank.
@@ -87,6 +96,22 @@ await new Promise(r=>setTimeout(r,10));
 assert(q("#priceChoices").children.length===5,"quick scenarios disappeared on Shopee");
 assert(q("#compareBody").children.length===7,"comparison rows disappeared on Shopee");
 assert(!q("#auditCalc").textContent.includes("Erro interno"),"calculation error after Shopee selection");
+
+// Consignação: import current calculator cost and verify test case values.
+window.PrecificaUI.activate("consignment",{scroll:false});
+q("#useCalculatedCost").click();
+await new Promise(r=>setTimeout(r,10));
+assert(Number(q("#consCost").value)>0,"calculated unit cost was not imported");
+q("#consCost").value="1.50";q("#consCost").dispatchEvent(new window.Event("input",{bubbles:true}));
+q("#consSalePrice").value="7.90";q("#consSalePrice").dispatchEvent(new window.Event("input",{bubbles:true}));
+q("#consCommission").value="30";q("#consCommission").dispatchEvent(new window.Event("input",{bubbles:true}));
+q("#consOtherFees").value="0";q("#consOtherFees").dispatchEvent(new window.Event("input",{bubbles:true}));
+await new Promise(r=>setTimeout(r,10));
+assert(q("#consResults").textContent.includes("R$ 2,37")||q("#consResults").textContent.includes("R$ 2,37"),"store commission test case missing");
+assert(q("#consResults").textContent.includes("R$ 5,53")||q("#consResults").textContent.includes("R$ 5,53"),"producer payout test case missing");
+assert(q("#consResults").textContent.includes("R$ 4,03")||q("#consResults").textContent.includes("R$ 4,03"),"producer profit test case missing");
+assert(q("#consScenarioBody").children.length===16,"scenario simulator should have 16 rows");
+window.PrecificaUI.activate("calc",{scroll:false});
 
 // Radar de Mercado: deterministic statistics + current calculator integration.
 assert(q("#marketSection"),"market section missing");

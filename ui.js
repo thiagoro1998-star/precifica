@@ -4,7 +4,7 @@
 (function(){
 "use strict";
 var KEY="precifica3d-workspace-view";
-var VALID=["calc","market","catalog"];
+var VALID=["calc","market","consignment","catalog"];
 
 function sections(){
   return Array.from(document.querySelectorAll("#workspaceGrid > section"));

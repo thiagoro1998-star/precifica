@@ -572,7 +572,7 @@ tbody tr:last-child td{border-bottom:0}
     backdrop-filter:blur(14px)
   }
   .side-nav:before,.side-nav-title,.side-nav-help{display:none}
-  .side-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+  .side-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
   .side-tab{
     display:flex;
     justify-content:center;
@@ -1069,4 +1069,49 @@ tbody tr:hover{background:#fff7f1}
   .side-tab-copy strong{font-size:10px}
   .ch:after{display:none}
   #workspaceGrid>section:nth-child(7) .stats{grid-template-columns:1fr 1fr}
+}
+
+
+/* Consignação e Revenda */
+#consignmentSection{--section-accent:#d97706;--section-soft:#fff8eb}
+.cons-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.cons-cost-import{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.65fr);gap:12px;align-items:end;margin-top:12px}
+.cons-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:12px;align-items:start}
+.cons-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cons-stat{padding:12px;border:1px solid #dfe5ec;border-radius:13px;background:linear-gradient(145deg,#fafcfe,#f3f6f9);min-width:0}
+.cons-stat span{display:block;color:#7b8493;font-size:10px;line-height:1.25;margin-bottom:4px}
+.cons-stat b{display:block;color:#172033;font-size:17px;font-weight:850;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.cons-stat small{display:block;margin-top:4px;color:#8490a0;font-size:9px;line-height:1.3}
+.cons-stat.good{border-color:#b7e6cf;background:#f1fbf6}.cons-stat.good b{color:#0f8a52}
+.cons-stat.warn{border-color:#f6d69d;background:#fff9ea}.cons-stat.warn b{color:#a66600}
+.cons-stat.bad{border-color:#f1b8b2;background:#fff3f1}.cons-stat.bad b{color:#b42318}
+.cons-stat.accent{border-color:#ffc79f;background:linear-gradient(145deg,#fff7f1,#ffeadb)}.cons-stat.accent b{color:#c94a00}
+.scenario-editors{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.scenario-inputs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.scenario-mini{min-height:38px!important;padding:7px 8px!important;font-size:12px!important}
+.scenario-threshold{width:110px}
+.cons-badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:9.5px;font-weight:850}
+.cons-badge.healthy{color:#0d7546;background:#e5f7ed}.cons-badge.tight{color:#9b6200;background:#fff1cf}.cons-badge.loss{color:#a8322a;background:#ffebe9}
+.negotiation-card{border-color:#ffd3b4;background:linear-gradient(145deg,#fff8f3,#fff0e5)}
+.negotiation-text{margin:0 0 10px;color:#334155;font-size:12px;line-height:1.65}
+.cons-saved{display:grid;grid-template-columns:minmax(0,1fr) auto 36px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #e7ebf0}
+.cons-saved:last-child{border-bottom:0}.cons-saved b{display:block;color:#202939;font-size:11px}.cons-saved small{display:block;color:#7a8494;font-size:9.5px;margin-top:2px}
+.cons-flash{position:fixed;right:20px;bottom:20px;z-index:120;transform:translateY(20px);opacity:0;pointer-events:none;padding:10px 14px;border-radius:12px;color:#fff;background:#172235;box-shadow:0 12px 28px rgba(15,23,42,.22);transition:.2s ease;font-size:11px;font-weight:750}
+.cons-flash.show{transform:translateY(0);opacity:1}
+.warn{color:#a66600!important}
+
+@media(max-width:1100px){
+  .cons-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cons-grid{grid-template-columns:1fr}
+}
+@media(max-width:900px){
+  .cons-cost-import{grid-template-columns:1fr}
+  .cons-stats{grid-template-columns:1fr 1fr}
+  .scenario-editors{grid-template-columns:1fr}
+  .scenario-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:430px){
+  .cons-toolbar{align-items:stretch}.cons-toolbar>.inline{width:100%}.cons-toolbar>.inline .btn{flex:1}
+  .cons-stats{grid-template-columns:1fr 1fr}
+  .cons-stat{padding:10px}.cons-stat b{font-size:15px}
 }

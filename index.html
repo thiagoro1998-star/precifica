@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <title>Precifica 3D</title>
 <meta name="description" content="Calculadora profissional de precificação para impressão 3D">\n<link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.10.0">
-<link rel="stylesheet" href="./style.css?v=1.10.0">
+<link rel="stylesheet" href="./style.css?v=1.11.0">
 </head>
 <body>
 <div class="app">
@@ -40,6 +40,9 @@
         </button>
         <button class="side-tab" data-workspace-tab="market" role="tab" aria-selected="false">
           <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-8"/><path d="M3 19h18"/></svg></span><span class="side-tab-copy"><strong>Mercado</strong><small>Referências e comparação</small></span>
+        </button>
+        <button class="side-tab" data-workspace-tab="consignment" role="tab" aria-selected="false">
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v11H4z"/><path d="M7 7V5h10v2M8 11h8M8 15h5"/></svg></span><span class="side-tab-copy"><strong>Consignação</strong><small>Revenda e comércio local</small></span>
         </button>
         <button class="side-tab" data-workspace-tab="catalog" role="tab" aria-selected="false">
           <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12.1V21"/></svg></span><span class="side-tab-copy"><strong>Catálogo</strong><small>Produtos e rentabilidade</small></span>
@@ -168,6 +171,92 @@
       </div>
     </section>
 
+    <section class="card span2" id="consignmentSection">
+      <div class="ch"><div class="num">09</div><div><h2>Consignação e Revenda</h2><div class="muted">Calcule acordos com lojas locais sem misturar comissão, margem e multiplicador.</div></div></div>
+      <div class="cb">
+        <div id="consFlash" class="cons-flash"></div>
+        <div class="cons-toolbar">
+          <div class="pills">
+            <button class="pill orange active" data-cons-mode="consignment">Consignação</button>
+            <button class="pill orange" data-cons-mode="resale">Revenda / Atacado</button>
+          </div>
+          <div class="inline"><button class="btn" id="consSave">Salvar cenário</button><button class="btn" id="consClear">Limpar</button></div>
+        </div>
+
+        <div class="box cons-cost-import">
+          <div><label>Custo completo por unidade</label><input class="input" id="consCost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Ex.: 1,50"><div class="hint" id="consCostOrigin">Valor manual</div></div>
+          <div><label>&nbsp;</label><button class="btn primary" id="useCalculatedCost">Usar custo calculado</button><div class="hint">Importa o custo unitário da aba Precificação e continua editável.</div></div>
+        </div>
+
+        <div id="consignmentMode">
+          <div class="cons-grid" style="margin-top:12px">
+            <div class="box">
+              <h3 class="title">Condições com a loja</h3>
+              <div class="row">
+                <div class="f s6"><label>Preço ao público</label><input class="input" id="consSalePrice" type="number" min="0" step="0.01"></div>
+                <div class="f s6"><label>Comissão da loja (%)</label><input class="input" id="consCommission" type="number" min="0" max="99.99" step="0.1"></div>
+                <div class="f s6"><label>Outras taxas / impostos (%)</label><input class="input" id="consOtherFees" type="number" min="0" max="99.99" step="0.1"></div>
+                <div class="f s3"><label>Quantidade entregue</label><input class="input" id="consDelivered" type="number" min="0" step="1"></div>
+                <div class="f s3"><label>Quantidade vendida</label><input class="input" id="consSold" type="number" min="0" step="1"></div>
+                <div class="f s6"><label>Periodicidade do acerto</label><select id="consSettlement"><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="personalizada">Personalizada</option></select></div>
+                <div class="f s6 hidden" id="settlementCustomWrap"><label>Periodicidade personalizada</label><input class="input" id="consSettlementCustom" placeholder="Ex.: a cada 10 dias"></div>
+              </div>
+            </div>
+            <div class="box">
+              <h3 class="title">Meta de preço</h3>
+              <label>Calcular com base em</label>
+              <select id="consGoalMode"><option value="profit">Lucro desejado em R$ por unidade</option><option value="margin">Margem líquida desejada (%)</option></select>
+              <div id="goalProfitWrap" style="margin-top:9px"><label>Lucro desejado por unidade</label><input class="input" id="consDesiredProfit" type="number" min="0" step="0.01"></div>
+              <div id="goalMarginWrap" class="hidden" style="margin-top:9px"><label>Margem líquida desejada (%)</label><input class="input" id="consDesiredMargin" type="number" min="0" max="99.99" step="0.1"><div class="hint">Lucro líquido ÷ preço ao público.</div></div>
+              <label style="margin-top:9px">Arredondamento comercial</label>
+              <select id="consRounding"><option value="x90">Terminar em R$ X,90</option><option value="x99">Terminar em R$ X,99</option><option value="integer">Número inteiro</option><option value="none">Sem arredondamento</option></select>
+            </div>
+          </div>
+          <div class="note hidden" id="consErrors" style="margin-top:12px"></div>
+          <div id="consResults" style="margin-top:12px"></div>
+
+          <div class="box" style="margin-top:12px">
+            <div class="market-section-head"><div><h3 class="title">Simulador de cenários</h3><div class="hint">Compare preços e comissões. Verde = saudável; amarelo = margem abaixo do limite visual; vermelho = prejuízo.</div></div><div><label>Limite saudável (%)</label><input class="input scenario-threshold" id="healthyThreshold" type="number" min="0" max="100" step="1"></div></div>
+            <div class="scenario-editors">
+              <div><label>Comissões (%)</label><div id="scenarioCommissions" class="scenario-inputs"></div></div>
+              <div><label>Preços (R$)</label><div id="scenarioPrices" class="scenario-inputs"></div></div>
+            </div>
+            <div class="table" style="margin-top:10px"><table><thead><tr><th>Preço</th><th>Comissão</th><th>Loja</th><th>Repasse</th><th>Lucro produtor</th><th>Margem</th><th>Status</th></tr></thead><tbody id="consScenarioBody"></tbody></table></div>
+            <div class="hint">O limite de 20% é apenas critério visual inicial e não uma regra contábil.</div>
+          </div>
+
+          <div class="box negotiation-card" style="margin-top:12px">
+            <h3 class="title">Resumo para apresentar ao lojista</h3>
+            <p id="negotiationText" class="negotiation-text"></p>
+            <button class="btn primary" id="copySummary">Copiar resumo</button>
+            <div class="hint">Resumo comercial. Não é contrato e não substitui orientação jurídica.</div>
+          </div>
+        </div>
+
+        <div id="resaleMode" class="hidden">
+          <div class="cons-grid" style="margin-top:12px">
+            <div class="box">
+              <h3 class="title">Venda para a loja</h3>
+              <div class="row">
+                <div class="f s6"><label>Preço de atacado</label><input class="input" id="resaleWholesale" type="number" min="0" step="0.01"></div>
+                <div class="f s6"><label>Preço sugerido ao consumidor</label><input class="input" id="resaleRetail" type="number" min="0" step="0.01"></div>
+                <div class="f s6"><label>Quantidade vendida para loja</label><input class="input" id="resaleQty" type="number" min="0" step="1"></div>
+                <div class="f s6"><label>Tipo de taxa do produtor</label><select id="producerFeeMode"><option value="percent">Percentual sobre atacado</option><option value="fixed">R$ fixo por unidade</option></select></div>
+                <div class="f s6"><label id="producerFeeLabel">Taxas do produtor (% do atacado)</label><input class="input" id="producerFeeValue" type="number" min="0" step="0.01"></div>
+                <div class="f s6"><label>Lucro desejado do produtor / un.</label><input class="input" id="producerDesiredProfit" type="number" min="0" step="0.01"></div>
+                <div class="f s6"><label>Margem desejada da loja (%)</label><input class="input" id="storeDesiredMargin" type="number" min="0" max="99.99" step="0.1"></div>
+              </div>
+            </div>
+            <div class="neutral"><b>Como ler:</b> margem do produtor = lucro líquido do produtor ÷ atacado. Margem da loja = lucro bruto da loja ÷ preço ao consumidor.</div>
+          </div>
+          <div class="note hidden" id="resaleErrors" style="margin-top:12px"></div>
+          <div id="resaleResults" style="margin-top:12px"></div>
+        </div>
+
+        <div class="box" style="margin-top:12px"><h3 class="title">Cenários salvos</h3><div id="consSaved"></div></div>
+      </div>
+    </section>
+
     <section class="card span2" id="catalogSection">
       <div class="ch"><div class="num">09</div><div><h2>Meu Catálogo de Rentabilidade</h2><div class="muted">Fotografias dos produtos que você já precificou. Salvo apenas neste navegador por enquanto.</div></div></div>
       <div class="cb">
@@ -180,7 +269,7 @@
     </main>
   </div>
   
-  <div class="footer">Precifica 3D · motor 1.10.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+  <div class="footer">Precifica 3D · motor 1.11.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
 </div>
 
 <div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>

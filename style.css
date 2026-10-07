@@ -572,7 +572,7 @@ tbody tr:last-child td{border-bottom:0}
     backdrop-filter:blur(14px)
   }
   .side-nav:before,.side-nav-title,.side-nav-help{display:none}
-  .side-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+  .side-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
   .side-tab{
     display:flex;
     justify-content:center;

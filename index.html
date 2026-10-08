@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <title>Precifica 3D</title>
 <meta name="description" content="Calculadora profissional de precificação para impressão 3D">\n<link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.10.0">
-<link rel="stylesheet" href="./style.css?v=1.11.0">
+<link rel="stylesheet" href="./style.css?v=1.12.0">
 </head>
 <body>
 <div class="app">
@@ -172,15 +172,31 @@
     </section>
 
     <section class="card span2" id="consignmentSection">
-      <div class="ch"><div class="num">09</div><div><h2>Consignação e Revenda</h2><div class="muted">Calcule acordos com lojas locais sem misturar comissão, margem e multiplicador.</div></div></div>
+      <div class="ch"><div class="num">09</div><div><h2>Consignação e Revenda</h2><div class="muted">Para começar, escolha os valores prontos. Se quiser, depois abra o modo completo.</div></div></div>
       <div class="cb">
         <div id="consFlash" class="cons-flash"></div>
-        <div class="cons-toolbar">
-          <div class="pills">
-            <button class="pill orange active" data-cons-mode="consignment">Consignação</button>
-            <button class="pill orange" data-cons-mode="resale">Revenda / Atacado</button>
+
+        <div class="cons-topbar">
+          <div>
+            <div class="cons-label">TIPO DE VENDA</div>
+            <div class="pills">
+              <button class="pill orange active" data-cons-mode="consignment">Consignação</button>
+              <button class="pill orange" data-cons-mode="resale">Revenda / Atacado</button>
+            </div>
           </div>
-          <div class="inline"><button class="btn" id="consSave">Salvar cenário</button><button class="btn" id="consClear">Limpar</button></div>
+          <div>
+            <div class="cons-label">NÍVEL DE DETALHE</div>
+            <div class="pills cons-ui-switch">
+              <button class="pill active" data-cons-ui="simple">Simples</button>
+              <button class="pill" data-cons-ui="full">Completo</button>
+            </div>
+          </div>
+          <div class="inline cons-actions"><button class="btn" id="consSave">Salvar cenário</button><button class="btn" id="consClear">Limpar</button></div>
+        </div>
+
+        <div class="cons-beginner-note">
+          <div class="cons-beginner-icon">1</div>
+          <div><b>Comece pelo custo da peça</b><span>Você pode puxar o custo da Precificação ou digitar manualmente.</span></div>
         </div>
 
         <div class="box cons-cost-import">
@@ -189,33 +205,99 @@
         </div>
 
         <div id="consignmentMode">
-          <div class="cons-grid" style="margin-top:12px">
-            <div class="box">
-              <h3 class="title">Condições com a loja</h3>
-              <div class="row">
-                <div class="f s6"><label>Preço ao público</label><input class="input" id="consSalePrice" type="number" min="0" step="0.01"></div>
-                <div class="f s6"><label>Comissão da loja (%)</label><input class="input" id="consCommission" type="number" min="0" max="99.99" step="0.1"></div>
-                <div class="f s6"><label>Outras taxas / impostos (%)</label><input class="input" id="consOtherFees" type="number" min="0" max="99.99" step="0.1"></div>
-                <div class="f s3"><label>Quantidade entregue</label><input class="input" id="consDelivered" type="number" min="0" step="1"></div>
-                <div class="f s3"><label>Quantidade vendida</label><input class="input" id="consSold" type="number" min="0" step="1"></div>
-                <div class="f s6"><label>Periodicidade do acerto</label><select id="consSettlement"><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="personalizada">Personalizada</option></select></div>
-                <div class="f s6 hidden" id="settlementCustomWrap"><label>Periodicidade personalizada</label><input class="input" id="consSettlementCustom" placeholder="Ex.: a cada 10 dias"></div>
+          <div class="cons-simple-only">
+            <div class="box cons-quick" style="margin-top:12px">
+              <div class="cons-quick-head">
+                <div><h3 class="title">Configuração rápida</h3><div class="hint">Clique nas opções. Você não precisa digitar tudo.</div></div>
+                <button class="btn" id="starterPreset">Usar exemplo: R$ 7,90 · 30% · 20 un.</button>
               </div>
-            </div>
-            <div class="box">
-              <h3 class="title">Meta de preço</h3>
-              <label>Calcular com base em</label>
-              <select id="consGoalMode"><option value="profit">Lucro desejado em R$ por unidade</option><option value="margin">Margem líquida desejada (%)</option></select>
-              <div id="goalProfitWrap" style="margin-top:9px"><label>Lucro desejado por unidade</label><input class="input" id="consDesiredProfit" type="number" min="0" step="0.01"></div>
-              <div id="goalMarginWrap" class="hidden" style="margin-top:9px"><label>Margem líquida desejada (%)</label><input class="input" id="consDesiredMargin" type="number" min="0" max="99.99" step="0.1"><div class="hint">Lucro líquido ÷ preço ao público.</div></div>
-              <label style="margin-top:9px">Arredondamento comercial</label>
-              <select id="consRounding"><option value="x90">Terminar em R$ X,90</option><option value="x99">Terminar em R$ X,99</option><option value="integer">Número inteiro</option><option value="none">Sem arredondamento</option></select>
+
+              <div class="cons-steps">
+                <div class="cons-step">
+                  <div class="cons-step-num">2</div>
+                  <div><label>Preço ao público</label><div class="quick-options" data-quick-group="salePrice">
+                    <button class="quick-chip" data-quick-key="salePrice" data-quick-value="5.90">R$ 5,90</button>
+                    <button class="quick-chip" data-quick-key="salePrice" data-quick-value="7.90">R$ 7,90</button>
+                    <button class="quick-chip" data-quick-key="salePrice" data-quick-value="9.90">R$ 9,90</button>
+                    <button class="quick-chip" data-quick-key="salePrice" data-quick-value="12.90">R$ 12,90</button>
+                  </div></div>
+                </div>
+
+                <div class="cons-step">
+                  <div class="cons-step-num">3</div>
+                  <div><label>Comissão da loja</label><div class="quick-options" data-quick-group="commissionPct">
+                    <button class="quick-chip" data-quick-key="commissionPct" data-quick-value="20">20%</button>
+                    <button class="quick-chip" data-quick-key="commissionPct" data-quick-value="30">30%</button>
+                    <button class="quick-chip" data-quick-key="commissionPct" data-quick-value="40">40%</button>
+                    <button class="quick-chip" data-quick-key="commissionPct" data-quick-value="50">50%</button>
+                  </div></div>
+                </div>
+
+                <div class="cons-step">
+                  <div class="cons-step-num">4</div>
+                  <div><label>Quantidade que vai deixar</label><div class="quick-options" data-quick-group="deliveredQty">
+                    <button class="quick-chip" data-quick-key="deliveredQty" data-quick-value="10">10 un.</button>
+                    <button class="quick-chip" data-quick-key="deliveredQty" data-quick-value="20">20 un.</button>
+                    <button class="quick-chip" data-quick-key="deliveredQty" data-quick-value="30">30 un.</button>
+                    <button class="quick-chip" data-quick-key="deliveredQty" data-quick-value="50">50 un.</button>
+                  </div></div>
+                </div>
+
+                <div class="cons-step">
+                  <div class="cons-step-num">5</div>
+                  <div><label>Lucro que você quer por unidade</label><div class="quick-options" data-quick-group="desiredProfit">
+                    <button class="quick-chip" data-quick-key="desiredProfit" data-quick-value="2">R$ 2</button>
+                    <button class="quick-chip" data-quick-key="desiredProfit" data-quick-value="4">R$ 4</button>
+                    <button class="quick-chip" data-quick-key="desiredProfit" data-quick-value="5">R$ 5</button>
+                    <button class="quick-chip" data-quick-key="desiredProfit" data-quick-value="6">R$ 6</button>
+                  </div></div>
+                </div>
+
+                <div class="cons-step">
+                  <div class="cons-step-num">6</div>
+                  <div><label>Quando a loja faz o acerto</label><div class="quick-options" data-quick-group="settlement">
+                    <button class="quick-chip" data-quick-key="settlement" data-quick-value="semanal">Semanal</button>
+                    <button class="quick-chip" data-quick-key="settlement" data-quick-value="quinzenal">Quinzenal</button>
+                    <button class="quick-chip" data-quick-key="settlement" data-quick-value="mensal">Mensal</button>
+                  </div></div>
+                </div>
+              </div>
+
+              <div id="quickConsResults" class="quick-result-strip"></div>
+              <button class="btn cons-open-full" id="openFullConsignment">Quero ajustar taxas, margem, vendidos e outras opções</button>
             </div>
           </div>
-          <div class="note hidden" id="consErrors" style="margin-top:12px"></div>
-          <div id="consResults" style="margin-top:12px"></div>
 
-          <div class="box" style="margin-top:12px">
+          <div class="cons-full-only">
+            <div class="cons-grid" style="margin-top:12px">
+              <div class="box">
+                <h3 class="title">Condições com a loja</h3>
+                <div class="row">
+                  <div class="f s6"><label>Preço ao público</label><input class="input" id="consSalePrice" type="number" min="0" step="0.01"></div>
+                  <div class="f s6"><label>Comissão da loja (%)</label><input class="input" id="consCommission" type="number" min="0" max="99.99" step="0.1"></div>
+                  <div class="f s6"><label>Outras taxas / impostos (%)</label><input class="input" id="consOtherFees" type="number" min="0" max="99.99" step="0.1"></div>
+                  <div class="f s3"><label>Quantidade entregue</label><input class="input" id="consDelivered" type="number" min="0" step="1"></div>
+                  <div class="f s3"><label>Quantidade vendida</label><input class="input" id="consSold" type="number" min="0" step="1"></div>
+                  <div class="f s6"><label>Periodicidade do acerto</label><select id="consSettlement"><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="personalizada">Personalizada</option></select></div>
+                  <div class="f s6 hidden" id="settlementCustomWrap"><label>Periodicidade personalizada</label><input class="input" id="consSettlementCustom" placeholder="Ex.: a cada 10 dias"></div>
+                </div>
+              </div>
+              <div class="box">
+                <h3 class="title">Meta de preço</h3>
+                <label>Calcular com base em</label>
+                <select id="consGoalMode"><option value="profit">Lucro desejado em R$ por unidade</option><option value="margin">Margem líquida desejada (%)</option></select>
+                <div id="goalProfitWrap" style="margin-top:9px"><label>Lucro desejado por unidade</label><input class="input" id="consDesiredProfit" type="number" min="0" step="0.01"></div>
+                <div id="goalMarginWrap" class="hidden" style="margin-top:9px"><label>Margem líquida desejada (%)</label><input class="input" id="consDesiredMargin" type="number" min="0" max="99.99" step="0.1"><div class="hint">Lucro líquido ÷ preço ao público.</div></div>
+                <label style="margin-top:9px">Arredondamento comercial</label>
+                <select id="consRounding"><option value="x90">Terminar em R$ X,90</option><option value="x99">Terminar em R$ X,99</option><option value="integer">Número inteiro</option><option value="none">Sem arredondamento</option></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="note hidden" id="consErrors" style="margin-top:12px"></div>
+          <div id="consResults" class="cons-full-only" style="margin-top:12px"></div>
+
+          <div class="box cons-full-only" style="margin-top:12px">
             <div class="market-section-head"><div><h3 class="title">Simulador de cenários</h3><div class="hint">Compare preços e comissões. Verde = saudável; amarelo = margem abaixo do limite visual; vermelho = prejuízo.</div></div><div><label>Limite saudável (%)</label><input class="input scenario-threshold" id="healthyThreshold" type="number" min="0" max="100" step="1"></div></div>
             <div class="scenario-editors">
               <div><label>Comissões (%)</label><div id="scenarioCommissions" class="scenario-inputs"></div></div>
@@ -234,26 +316,56 @@
         </div>
 
         <div id="resaleMode" class="hidden">
-          <div class="cons-grid" style="margin-top:12px">
-            <div class="box">
-              <h3 class="title">Venda para a loja</h3>
-              <div class="row">
-                <div class="f s6"><label>Preço de atacado</label><input class="input" id="resaleWholesale" type="number" min="0" step="0.01"></div>
-                <div class="f s6"><label>Preço sugerido ao consumidor</label><input class="input" id="resaleRetail" type="number" min="0" step="0.01"></div>
-                <div class="f s6"><label>Quantidade vendida para loja</label><input class="input" id="resaleQty" type="number" min="0" step="1"></div>
-                <div class="f s6"><label>Tipo de taxa do produtor</label><select id="producerFeeMode"><option value="percent">Percentual sobre atacado</option><option value="fixed">R$ fixo por unidade</option></select></div>
-                <div class="f s6"><label id="producerFeeLabel">Taxas do produtor (% do atacado)</label><input class="input" id="producerFeeValue" type="number" min="0" step="0.01"></div>
-                <div class="f s6"><label>Lucro desejado do produtor / un.</label><input class="input" id="producerDesiredProfit" type="number" min="0" step="0.01"></div>
-                <div class="f s6"><label>Margem desejada da loja (%)</label><input class="input" id="storeDesiredMargin" type="number" min="0" max="99.99" step="0.1"></div>
+          <div class="cons-simple-only">
+            <div class="box cons-quick" style="margin-top:12px">
+              <div class="cons-quick-head"><div><h3 class="title">Revenda simples</h3><div class="hint">Escolha o lucro do produtor, a margem da loja e a quantidade.</div></div><button class="btn" id="useSuggestedResale">Usar preços sugeridos</button></div>
+              <div class="cons-steps">
+                <div class="cons-step"><div class="cons-step-num">2</div><div><label>Lucro do produtor / unidade</label><div class="quick-options">
+                  <button class="quick-chip" data-quick-key="producerDesiredProfit" data-quick-value="2">R$ 2</button>
+                  <button class="quick-chip" data-quick-key="producerDesiredProfit" data-quick-value="4">R$ 4</button>
+                  <button class="quick-chip" data-quick-key="producerDesiredProfit" data-quick-value="6">R$ 6</button>
+                  <button class="quick-chip" data-quick-key="producerDesiredProfit" data-quick-value="8">R$ 8</button>
+                </div></div></div>
+                <div class="cons-step"><div class="cons-step-num">3</div><div><label>Margem desejada da loja</label><div class="quick-options">
+                  <button class="quick-chip" data-quick-key="storeDesiredMarginPct" data-quick-value="20">20%</button>
+                  <button class="quick-chip" data-quick-key="storeDesiredMarginPct" data-quick-value="30">30%</button>
+                  <button class="quick-chip" data-quick-key="storeDesiredMarginPct" data-quick-value="40">40%</button>
+                  <button class="quick-chip" data-quick-key="storeDesiredMarginPct" data-quick-value="50">50%</button>
+                </div></div></div>
+                <div class="cons-step"><div class="cons-step-num">4</div><div><label>Quantidade vendida para a loja</label><div class="quick-options">
+                  <button class="quick-chip" data-quick-key="resaleQty" data-quick-value="10">10 un.</button>
+                  <button class="quick-chip" data-quick-key="resaleQty" data-quick-value="20">20 un.</button>
+                  <button class="quick-chip" data-quick-key="resaleQty" data-quick-value="30">30 un.</button>
+                  <button class="quick-chip" data-quick-key="resaleQty" data-quick-value="50">50 un.</button>
+                </div></div></div>
               </div>
+              <div id="quickResaleResults" class="quick-result-strip"></div>
+              <button class="btn cons-open-full" id="openFullResale">Quero ajustar atacado, varejo e taxas manualmente</button>
             </div>
-            <div class="neutral"><b>Como ler:</b> margem do produtor = lucro líquido do produtor ÷ atacado. Margem da loja = lucro bruto da loja ÷ preço ao consumidor.</div>
+          </div>
+
+          <div class="cons-full-only">
+            <div class="cons-grid" style="margin-top:12px">
+              <div class="box">
+                <h3 class="title">Venda para a loja</h3>
+                <div class="row">
+                  <div class="f s6"><label>Preço de atacado</label><input class="input" id="resaleWholesale" type="number" min="0" step="0.01"></div>
+                  <div class="f s6"><label>Preço sugerido ao consumidor</label><input class="input" id="resaleRetail" type="number" min="0" step="0.01"></div>
+                  <div class="f s6"><label>Quantidade vendida para loja</label><input class="input" id="resaleQty" type="number" min="0" step="1"></div>
+                  <div class="f s6"><label>Tipo de taxa do produtor</label><select id="producerFeeMode"><option value="percent">Percentual sobre atacado</option><option value="fixed">R$ fixo por unidade</option></select></div>
+                  <div class="f s6"><label id="producerFeeLabel">Taxas do produtor (% do atacado)</label><input class="input" id="producerFeeValue" type="number" min="0" step="0.01"></div>
+                  <div class="f s6"><label>Lucro desejado do produtor / un.</label><input class="input" id="producerDesiredProfit" type="number" min="0" step="0.01"></div>
+                  <div class="f s6"><label>Margem desejada da loja (%)</label><input class="input" id="storeDesiredMargin" type="number" min="0" max="99.99" step="0.1"></div>
+                </div>
+              </div>
+              <div class="neutral"><b>Como ler:</b> margem do produtor = lucro líquido do produtor ÷ atacado. Margem da loja = lucro bruto da loja ÷ preço ao consumidor.</div>
+            </div>
           </div>
           <div class="note hidden" id="resaleErrors" style="margin-top:12px"></div>
-          <div id="resaleResults" style="margin-top:12px"></div>
+          <div id="resaleResults" class="cons-full-only" style="margin-top:12px"></div>
         </div>
 
-        <div class="box" style="margin-top:12px"><h3 class="title">Cenários salvos</h3><div id="consSaved"></div></div>
+        <div class="box cons-full-only" style="margin-top:12px"><h3 class="title">Cenários salvos</h3><div id="consSaved"></div></div>
       </div>
     </section>
 
@@ -269,7 +381,7 @@
     </main>
   </div>
   
-  <div class="footer">Precifica 3D · motor 1.11.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+  <div class="footer">Precifica 3D · motor 1.12.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
 </div>
 
 <div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>

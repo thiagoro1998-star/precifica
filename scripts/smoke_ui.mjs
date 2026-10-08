@@ -97,19 +97,40 @@ assert(q("#priceChoices").children.length===5,"quick scenarios disappeared on Sh
 assert(q("#compareBody").children.length===7,"comparison rows disappeared on Shopee");
 assert(!q("#auditCalc").textContent.includes("Erro interno"),"calculation error after Shopee selection");
 
-// Consignação: import current calculator cost and verify test case values.
+// Consignação: beginner mode, selectable presets, import and deterministic values.
 window.PrecificaUI.activate("consignment",{scroll:false});
+assert(!q(".cons-simple-only").classList.contains("hidden"),"simple consignation mode should be visible by default");
+assert(qa("[data-cons-ui]").length===2,"simple/full selector missing");
+assert(qa('.quick-chip[data-quick-key="salePrice"]').length===4,"quick price options missing");
+assert(qa('.quick-chip[data-quick-key="commissionPct"]').length===4,"quick commission options missing");
+assert(qa('.quick-chip[data-quick-key="deliveredQty"]').length===4,"quick quantity options missing");
+
 q("#useCalculatedCost").click();
 await new Promise(r=>setTimeout(r,10));
 assert(Number(q("#consCost").value)>0,"calculated unit cost was not imported");
+
+// Quick chips must fill the detailed fields too.
+qa('.quick-chip[data-quick-key="salePrice"]').find(x=>x.dataset.quickValue==="7.90").click();
+qa('.quick-chip[data-quick-key="commissionPct"]').find(x=>x.dataset.quickValue==="30").click();
+qa('.quick-chip[data-quick-key="deliveredQty"]').find(x=>x.dataset.quickValue==="20").click();
+assert(q("#consSalePrice").value==="7.90","quick price did not sync detailed input");
+assert(q("#consCommission").value==="30","quick commission did not sync detailed input");
+assert(q("#consDelivered").value==="20","quick quantity did not sync detailed input");
+
+// Deterministic test case.
 q("#consCost").value="1.50";q("#consCost").dispatchEvent(new window.Event("input",{bubbles:true}));
 q("#consSalePrice").value="7.90";q("#consSalePrice").dispatchEvent(new window.Event("input",{bubbles:true}));
 q("#consCommission").value="30";q("#consCommission").dispatchEvent(new window.Event("input",{bubbles:true}));
 q("#consOtherFees").value="0";q("#consOtherFees").dispatchEvent(new window.Event("input",{bubbles:true}));
 await new Promise(r=>setTimeout(r,10));
-assert(q("#consResults").textContent.includes("R$ 2,37")||q("#consResults").textContent.includes("R$ 2,37"),"store commission test case missing");
-assert(q("#consResults").textContent.includes("R$ 5,53")||q("#consResults").textContent.includes("R$ 5,53"),"producer payout test case missing");
-assert(q("#consResults").textContent.includes("R$ 4,03")||q("#consResults").textContent.includes("R$ 4,03"),"producer profit test case missing");
+assert(q("#quickConsResults").textContent.includes("R$ 2,37")||q("#quickConsResults").textContent.includes("R$ 2,37"),"quick result store commission missing");
+assert(q("#quickConsResults").textContent.includes("R$ 5,53")||q("#quickConsResults").textContent.includes("R$ 5,53"),"quick result producer payout missing");
+assert(q("#quickConsResults").textContent.includes("R$ 4,03")||q("#quickConsResults").textContent.includes("R$ 4,03"),"quick result producer profit missing");
+
+// Full mode still exposes all prior features.
+q('[data-cons-ui="full"]').click();
+assert(!q("#consResults").classList.contains("hidden"),"full detailed results did not open");
+assert(q("#consResults").textContent.includes("R$ 4,03")||q("#consResults").textContent.includes("R$ 4,03"),"detailed producer profit missing");
 assert(q("#consScenarioBody").children.length===16,"scenario simulator should have 16 rows");
 window.PrecificaUI.activate("calc",{scroll:false});
 

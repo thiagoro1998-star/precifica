@@ -11,7 +11,7 @@
 <meta name="description" content="Calculadora profissional de precificação para impressão 3D">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.10.0">
 <link rel="stylesheet" href="./style.css?v=1.13.0">\n<link rel="stylesheet" href="./pro-ui.css?v=1.13.0">
-<link rel="stylesheet" href="./operations.css?v=1.14.0">
+<link rel="stylesheet" href="./operations.css?v=1.15.0">
 </head>
 <body>
 <div class="app">
@@ -129,7 +129,7 @@
     <section class="card" id="materialSection">
       <div class="ch"><div class="num">02</div><div><h2>Material</h2><div class="muted">Filamento e custo por grama.</div></div></div>
       <div class="cb">
-        <div class="row"><div class="f s6"><label>Preset de filamento</label><select id="filamentPreset"></select></div><div class="f s6"><label>Material</label><select id="material"><option>PLA</option><option>PETG</option><option>ABS</option><option>ASA</option><option>TPU</option><option>Outro</option></select></div></div>
+        <div class="row"><div class="f s6"><label>Preset de filamento</label><select id="filamentPreset"></select></div><div class="f s6"><label>Material</label><select id="material"><option value="">Selecione o material</option><option>PLA</option><option>PETG</option><option>ABS</option><option>ASA</option><option>TPU</option><option>Outro</option></select></div></div>
         <div class="stats" style="margin-top:13px"><div class="stat"><div class="k">Preço do rolo</div><div class="v" id="filPrice">R$ 0,00</div></div><div class="stat"><div class="k">Peso do rolo</div><div class="v" id="filWeight">0 g</div></div><div class="stat a"><div class="k">Custo por grama</div><div class="v" id="filCostG">R$ 0,000/g</div></div></div>
         <button class="btn" style="margin-top:12px" data-open="filamentModal">Editar filamentos</button>
       </div>
@@ -152,7 +152,7 @@
   </div>
   <div class="hint" id="energyRefHint">O Precifica só usa tarifa automática quando há referência identificável da distribuidora. Se houver dúvida, use “Da conta”, que é o modo mais preciso.</div>
 </div>
-          <div id="energyManual" class="hidden"><label>R$/kWh</label><input class="input" id="manualKwh" type="number" min="0" step="0.01" value="1"></div>
+          <div id="energyManual" class="hidden"><label>R$/kWh</label><input class="input" id="manualKwh" type="number" min="0" step="0.01" value="0"></div>
           <div class="stats" style="margin-top:12px"><div class="stat a"><div class="k">Valor usado</div><div class="v" id="kwhUsed">R$ 0,00/kWh</div></div><div class="stat"><div class="k">Origem</div><div class="v" style="font-size:13px" id="kwhSource">Carregando tarifa…</div></div><div class="stat"><div class="k">Energia do projeto</div><div class="v" id="energyCost">R$ 0,00</div></div></div>
         </div>
       </div>
@@ -177,7 +177,7 @@
         <select id="taxProfile"><option value="none">Não sei / não incluir</option><option value="cpf">Pessoa Física (CPF)</option><option value="meiCommerce">MEI — Comércio/Indústria</option><option value="meiService">MEI — Serviços</option><option value="meiBoth">MEI — Comércio + Serviços</option><option value="simplesCommerce">Simples Nacional — Comércio</option><option value="simplesIndustry">Simples Nacional — Indústria</option><option value="presumed">Lucro Presumido</option><option value="real">Lucro Real</option><option value="other">Outro / personalizado</option></select>
         <div class="note" id="taxInfo" style="margin-top:10px"></div>
         <div class="box hidden" id="simplesBox" style="margin-top:12px"><div class="row"><div class="f s6"><label>Faturamento acumulado em 12 meses (RBT12)</label><input class="input" id="rbt12" type="number" min="0" step="100"></div><div class="f s6"><label>Alíquota efetiva calculada</label><input class="input" id="simplesRate" readonly></div></div></div>
-        <details><summary>Opções fiscais avançadas</summary><div class="box"><label>Alíquota manual sobre a venda (%)</label><input class="input" id="manualTaxRate" type="number" min="0" step="0.01" value="0"><label class="check" style="margin-top:10px"><input type="checkbox" id="meiAllocate"> Ratear custo mensal do MEI por pedido</label><div id="meiOrdersWrap" class="hidden" style="margin-top:8px"><label>Pedidos/mês usados no rateio</label><input class="input" id="meiOrders" type="number" min="1" value="50"></div></div></details>
+        <details><summary>Opções fiscais avançadas</summary><div class="box"><label>Alíquota manual sobre a venda (%)</label><input class="input" id="manualTaxRate" type="number" min="0" step="0.01" value="0"><label class="check" style="margin-top:10px"><input type="checkbox" id="meiAllocate"> Ratear custo mensal do MEI por pedido</label><div id="meiOrdersWrap" class="hidden" style="margin-top:8px"><label>Pedidos/mês usados no rateio</label><input class="input" id="meiOrders" type="number" min="1" value="0"></div></div></details>
         <div class="box" style="margin-top:12px"><h3 class="title">Ads / CAC</h3><label class="check"><input type="checkbox" id="adsOn"> Tenho histórico de anúncios</label><div id="adsBox" class="row hidden" style="margin-top:9px"><div class="f s6"><label>Gasto em anúncios</label><input class="input" id="adsSpend" type="number" min="0" step="0.01"></div><div class="f s6"><label>Pedidos atribuídos</label><input class="input" id="adsOrders" type="number" min="1"></div></div><div class="hint" id="cacHint">Sem histórico, CAC = R$ 0.</div></div>
         <div class="box" style="margin-top:12px"><h3 class="title">Reserva perdas/devoluções</h3><select id="lossReserve"><option value="0" selected>0% — não incluir</option><option value="1">1% — conservadora</option><option value="2">2% — moderada</option><option value="custom">Personalizado</option></select><input class="input hidden" id="lossCustom" type="number" min="0" step="0.1" placeholder="%" style="margin-top:8px"></div>
       </div>
@@ -190,9 +190,9 @@
         <div class="note" id="channelInfo"></div><div class="box" id="channelOptions" style="margin-top:10px"></div>
         <h3 class="title" style="margin-top:15px">Como quer chegar ao preço?</h3><div class="pills"><button class="pill orange active" data-price-mode="suggest">Precifica sugere · INICIANTE</button><button class="pill orange" data-price-mode="profit">Quero R$ de lucro</button><button class="pill orange" data-price-mode="margin">Quero % de margem</button><button class="pill orange" data-price-mode="markup">Quero usar markup</button></div>
         <div class="box" id="suggestBox"><div class="row"><div class="f s6"><label>Perfil da sugestão</label><select id="suggestProfile"><option value="economic">Econômico</option><option value="balanced" selected>Equilibrado</option><option value="strong">Forte · mais folga</option></select></div><div class="f s6"><label>Meta automática de lucro líquido</label><div class="v big" id="suggestProfit">R$ 0,00</div></div></div><div class="hint">Referência financeira, não pesquisa de concorrentes.</div></div>
-        <div class="box hidden" id="profitBox"><label>Lucro líquido desejado por unidade</label><input class="input" id="targetProfit" type="number" min="0" step="0.01" value="10"></div>
-        <div class="box hidden" id="marginBox"><label>Margem líquida desejada (%)</label><input class="input" id="targetMargin" type="number" min="0" max="95" step="0.1" value="40"></div>
-        <div class="box hidden" id="markupBox"><label>Markup sobre o custo (%)</label><input class="input" id="targetMarkup" type="number" min="0" step="10" value="300"></div>
+        <div class="box hidden" id="profitBox"><label>Lucro líquido desejado por unidade</label><input class="input" id="targetProfit" type="number" min="0" step="0.01" value="0"></div>
+        <div class="box hidden" id="marginBox"><label>Margem líquida desejada (%)</label><input class="input" id="targetMargin" type="number" min="0" max="95" step="0.1" value="0"></div>
+        <div class="box hidden" id="markupBox"><label>Markup sobre o custo (%)</label><input class="input" id="targetMarkup" type="number" min="0" step="10" value="0"></div>
         <div class="box" style="margin-top:12px"><h3 class="title">Não sei quanto cobrar</h3><div class="muted" id="scenarioChannel"></div><div class="choices" id="priceChoices" style="margin-top:9px"></div></div>
         <details><summary>Configuração avançada do canal</summary><div class="box"><div class="row"><div class="f s6"><label>Sobrescrever comissão (%)</label><input class="input" id="overridePct" type="number" step="0.01" placeholder="vazio = automático"></div><div class="f s6"><label>Somar taxa fixa manual (R$)</label><input class="input" id="overrideFixed" type="number" step="0.01" value="0"></div></div></div></details>
       </div>
@@ -255,14 +255,15 @@
 
         <div class="cons-area-tabs" role="tablist" aria-label="Áreas de consignação">
           <button class="cons-area-tab active" data-cons-area="dashboard"><span class="cons-area-icon">▦</span><span><b>Dashboard</b><small>Visão geral</small></span></button>
-          <button class="cons-area-tab" data-cons-area="stores"><span class="cons-area-icon">⌂</span><span><b>Lojas e pontos</b><small>Estoque e acertos</small></span></button>
-          <button class="cons-area-tab" data-cons-area="simulator"><span class="cons-area-icon">%</span><span><b>Simulador</b><small>Consignação e atacado</small></span></button>
+          <button class="cons-area-tab" data-cons-area="new"><span class="cons-area-icon">＋</span><span><b>Cadastrar ponto</b><small>Nova consignação</small></span></button>
+          <button class="cons-area-tab" data-cons-area="manage"><span class="cons-area-icon">⌂</span><span><b>Gerir pontos</b><small>Estoque e acertos</small></span></button>
+          <button class="cons-area-tab" data-cons-area="simulator"><span class="cons-area-icon">%</span><span><b>Simulador</b><small>Testar condições</small></span></button>
         </div>
 
         <div class="cons-area-panel" data-cons-area-panel="dashboard">
           <div class="cons-ops-hero">
             <div><span class="cons-eyebrow">OPERAÇÃO</span><h3>O que está fora da sua bancada agora</h3><p>Veja quantas peças estão em lojas, quanto precisa receber e quais pontos já acertaram.</p></div>
-            <button class="btn primary" data-cons-area="stores" type="button">+ Novo ponto</button>
+            <button class="btn primary" data-cons-area="new" type="button">+ Novo ponto</button>
           </div>
 
           <div class="cons-dashboard-kpis">
@@ -275,38 +276,49 @@
           <div class="cons-receivable-alert" id="consReceivableAlert">Cadastre seus pontos para o painel começar a acompanhar recebíveis.</div>
 
           <div class="box cons-dashboard-table">
-            <div class="cons-panel-head"><div><h3 class="title">Resumo por ponto</h3><div class="hint">Estoque atual, vendas e situação financeira de cada parceiro.</div></div><button class="btn" data-cons-area="stores" type="button">Gerenciar pontos</button></div>
+            <div class="cons-panel-head"><div><h3 class="title">Resumo por ponto</h3><div class="hint">Estoque atual, vendas e situação financeira de cada parceiro.</div></div><button class="btn" data-cons-area="manage" type="button">Gerenciar pontos</button></div>
             <div class="table"><table><thead><tr><th>Ponto</th><th>Em exposição</th><th>Vendidas</th><th>Repasse gerado</th><th>A receber</th><th>Recebido</th><th>Status</th><th></th></tr></thead><tbody id="consStoresSummary"></tbody></table></div>
           </div>
         </div>
 
-        <div class="cons-area-panel hidden" data-cons-area-panel="stores">
-          <div class="cons-panel-head cons-stores-title"><div><span class="cons-eyebrow">PONTOS DE VENDA</span><h3 class="title">Lojas e parceiros</h3><div class="hint">Cadastre onde suas peças foram deixadas e depois registre vendas, pagamentos, devoluções e reposições.</div></div></div>
-
-          <div class="cons-store-layout">
-            <div class="box cons-store-form">
-              <div class="cons-panel-head"><div><h3 class="title">Adicionar novo ponto</h3><div class="hint">Os campos abaixo criam o controle inicial desta consignação.</div></div></div>
-              <div class="row">
-                <div class="f s6"><label>Nome do ponto / loja</label><input class="input" id="storeName" placeholder="Ex.: Loja Centro"></div>
-                <div class="f s6"><label>Endereço</label><input class="input" id="storeAddress" placeholder="Rua, número, bairro, cidade"></div>
-                <div class="f s6"><label>Produto / referência</label><input class="input" id="storeProduct" placeholder="Ex.: Chaveiro articulado"></div>
-                <div class="f s3"><label>Peças deixadas</label><input class="input" id="storeQty" type="number" min="1" step="1" placeholder="20"></div>
-                <div class="f s3"><label>Preço ao público</label><input class="input" id="storePrice" type="number" min="0" step="0.01" placeholder="9,90"></div>
-                <div class="f s3"><label>Comissão da loja (%)</label><input class="input" id="storeCommission" type="number" min="0" max="99" step="0.1" placeholder="30"></div>
-                <div class="f s3"><label>Acerto</label><select id="storeSettlement"><option value="semanal">Semanal</option><option value="quinzenal" selected>Quinzenal</option><option value="mensal">Mensal</option><option value="sob demanda">Sob demanda</option></select></div>
-                <div class="f s6"><label>Custo da peça (opcional)</label><div class="cons-inline-field"><input class="input" id="storeCost" type="number" min="0" step="0.01" placeholder="0,00"><button class="btn" id="importStoreCost" type="button">Usar custo da Precificação</button></div></div>
-              </div>
+        <div class="cons-area-panel hidden" data-cons-area-panel="new">
+          <div class="cons-panel-head cons-stores-title">
+            <div><span class="cons-eyebrow">NOVO PONTO</span><h3 class="title">Cadastrar ponto de consignação</h3><div class="hint">Cadastre a loja, endereço, estoque inicial e as condições comerciais. Nenhum valor é presumido.</div></div>
+          </div>
+          <div class="box cons-store-form">
+            <div class="row">
+              <div class="f s6"><label>Nome do ponto / loja</label><input class="input" id="storeName" placeholder="Ex.: Loja Centro"></div>
+              <div class="f s6"><label>Endereço</label><input class="input" id="storeAddress" placeholder="Rua, número, bairro, cidade"></div>
+              <div class="f s6"><label>Produto / referência</label><input class="input" id="storeProduct" placeholder="Ex.: Chaveiro articulado"></div>
+              <div class="f s3"><label>Peças deixadas</label><input class="input" id="storeQty" type="number" min="0" step="1" value="0"></div>
+              <div class="f s3"><label>Preço ao público</label><input class="input" id="storePrice" type="number" min="0" step="0.01" value="0"></div>
+              <div class="f s3"><label>Comissão da loja (%)</label><input class="input" id="storeCommission" type="number" min="0" max="99" step="0.1" value="0"></div>
+              <div class="f s3"><label>Acerto</label><select id="storeSettlement"><option value="">Selecione</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="sob demanda">Sob demanda</option></select></div>
+              <div class="f s6"><label>Custo da peça</label><div class="cons-inline-field"><input class="input" id="storeCost" type="number" min="0" step="0.01" value="0"><button class="btn" id="importStoreCost" type="button">Usar custo da Precificação</button></div></div>
+            </div>
+            <div class="cons-point-preview pending" id="storeMarginPreview">
+              <div><span>Repasse por unidade</span><b id="storePreviewRepasse">R$ 0,00</b></div>
+              <div><span>Lucro estimado / un.</span><b id="storePreviewProfit">R$ 0,00</b></div>
+              <div><span>Sua margem sobre o repasse</span><b id="storePreviewMargin">0%</b></div>
+              <p id="storePreviewStatus">Preencha os dados e clique em Calcular condição.</p>
+            </div>
+            <div class="inline cons-new-actions">
+              <button class="btn" id="previewStoreTerms" type="button">Calcular condição do ponto</button>
               <button class="btn primary cons-add-store" id="addConsStore" type="button">+ Adicionar ponto de consignação</button>
             </div>
+          </div>
+        </div>
 
-            <div class="cons-store-list-wrap">
-              <div class="cons-panel-head"><div><h3 class="title">Pontos cadastrados</h3><div class="hint">Clique em Gerenciar para abrir o controle daquele parceiro.</div></div></div>
-              <div class="cons-store-cards" id="consStoreCards"></div>
-            </div>
+        <div class="cons-area-panel hidden" data-cons-area-panel="manage">
+          <div class="cons-panel-head cons-stores-title"><div><span class="cons-eyebrow">GESTÃO</span><h3 class="title">Gerir lojas e parceiros</h3><div class="hint">Acompanhe estoque, vendas, margem, valores a receber, pagamentos, devoluções e reposições.</div></div></div>
+
+          <div class="cons-store-list-wrap">
+            <div class="cons-panel-head"><div><h3 class="title">Pontos cadastrados</h3><div class="hint">Escolha um ponto para abrir a operação completa.</div></div><button class="btn" data-cons-area="new" type="button">+ Cadastrar outro ponto</button></div>
+            <div class="cons-store-cards" id="consStoreCards"></div>
           </div>
 
           <div class="cons-store-detail-empty" id="consStoreDetailEmpty">
-            <b>Selecione um ponto para gerenciar</b><span>Depois de cadastrar uma loja, você poderá registrar vendas, recebimentos, devoluções e reposições por botão.</span>
+            <b>Selecione um ponto para gerenciar</b><span>Você poderá registrar vendas, recebimentos, devoluções e reposições sem editar números escondidos.</span>
           </div>
 
           <div class="cons-store-detail hidden" id="consStoreDetail">
@@ -322,10 +334,11 @@
               <div class="good"><span>Recebido</span><b id="detailPaid">R$ 0,00</b></div>
             </div>
 
-            <div class="cons-finance-line">
+            <div class="cons-finance-line cons-finance-five">
               <div><span>Venda bruta registrada</span><b id="detailGross">R$ 0,00</b></div>
               <div><span>Parte da loja</span><b id="detailStoreShare">R$ 0,00</b></div>
               <div><span>Seu repasse gerado</span><b id="detailProducerShare">R$ 0,00</b></div>
+              <div><span>Sua margem / repasse</span><b id="detailUnitMargin">—</b></div>
               <div><span>Condições</span><b id="detailTerms">—</b></div>
             </div>
 
@@ -338,7 +351,7 @@
 
             <div class="cons-detail-columns">
               <div class="box">
-                <div class="cons-panel-head"><div><h3 class="title">Condições do ponto</h3><div class="hint">Alterar preço/comissão recalcula o valor devido sobre as vendas já registradas.</div></div></div>
+                <div class="cons-panel-head"><div><h3 class="title">Condições do ponto</h3><div class="hint">Preço, comissão e endereço só mudam depois de clicar em Salvar alterações.</div></div></div>
                 <div class="row">
                   <div class="f s4"><label>Preço ao público</label><input class="input" id="editStorePrice" type="number" min="0" step="0.01"></div>
                   <div class="f s4"><label>Comissão (%)</label><input class="input" id="editStoreCommission" type="number" min="0" max="99" step="0.1"></div>
@@ -347,7 +360,7 @@
                 <div class="inline" style="margin-top:10px"><button class="btn" id="saveStoreTerms" type="button">Salvar alterações</button><button class="btn primary" id="settleStore" type="button">Marcar saldo como pago</button><button class="btn" id="archiveStore" type="button">Encerrar ponto</button></div>
               </div>
               <div class="box">
-                <div class="cons-panel-head"><div><h3 class="title">Últimas movimentações</h3><div class="hint">Registro local para você conferir o que foi lançado.</div></div></div>
+                <div class="cons-panel-head"><div><h3 class="title">Últimas movimentações</h3><div class="hint">Registro local para conferir tudo o que foi lançado.</div></div></div>
                 <div id="storeMovementList"></div>
               </div>
             </div>
@@ -567,7 +580,7 @@
     </main>
   </div>
   
-  <div class="footer">Precifica 3D · motor 1.14.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+  <div class="footer">Precifica 3D · motor 1.15.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
 </div>
 
 <div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>
@@ -637,12 +650,12 @@
 </div>
 <div class="shell-toast" id="shellToast"></div>
 
-<script src="./app.js?v=1.14.0"></script>
-<script src="./market.js?v=1.14.0"></script>
-<script src="./consignment-math.js?v=1.14.0"></script>
-<script src="./consignment.js?v=1.14.0"></script>
-<script src="./consignment-ops.js?v=1.14.0"></script>
-<script src="./ui.js?v=1.14.0"></script>
-<script src="./manual-calc.js?v=1.14.0"></script>
-<script src="./shell.js?v=1.14.0"></script>
+<script src="./app.js?v=1.15.0"></script>
+<script src="./market.js?v=1.15.0"></script>
+<script src="./consignment-math.js?v=1.15.0"></script>
+<script src="./consignment.js?v=1.15.0"></script>
+<script src="./consignment-ops.js?v=1.15.0"></script>
+<script src="./ui.js?v=1.15.0"></script>
+<script src="./manual-calc.js?v=1.15.0"></script>
+<script src="./shell.js?v=1.15.0"></script>
 </body></html>

@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import {JSDOM} from "jsdom";
 
+process.on("uncaughtException",(err)=>{console.error(err);process.exit(1)});
+process.on("unhandledRejection",(err)=>{console.error(err);process.exit(1)});
+
 const html=fs.readFileSync("index.html","utf8")
   .replace(/<script[^>]*src="\.\/app\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/market\.js[^"]*"[^>]*><\/script>/,"")

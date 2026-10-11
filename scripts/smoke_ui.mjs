@@ -181,3 +181,5 @@ q("#closeAccount").click();
 assert(!q("#accountModal").classList.contains("show"),"account modal did not close");
 
 console.log("UI smoke verification: OK");
+window.close();
+process.exit(0);

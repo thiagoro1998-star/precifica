@@ -122,6 +122,10 @@ await new Promise(r=>setTimeout(r,10));
 assert(q("#priceChoices").children.length===5,"quick scenarios disappeared on Shopee");
 assert(q("#compareBody").children.length===7,"comparison rows disappeared on Shopee");
 assert(!q("#auditCalc").textContent.includes("Erro interno"),"calculation error after Shopee selection");
+assert(q("#resultSection").classList.contains("calc-result-pending"),"channel change should require recalculation");
+q("#calculateNowBtn").click();
+await new Promise(r=>setTimeout(r,20));
+assert(window.document.body.dataset.calcConfirmed==="true","recalculation after channel change was not confirmed");
 
 // Consignação: operations dashboard, stores and simulator.
 window.PrecificaUI.activate("consignment",{scroll:false});

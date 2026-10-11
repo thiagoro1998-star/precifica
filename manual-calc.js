@@ -10,6 +10,12 @@ function qa(s){return Array.from(document.querySelectorAll(s))}
 function stampText(){
   return "Calculado às "+new Date().toLocaleTimeString("pt-BR")+". Se você alterar qualquer campo acima, será necessário recalcular.";
 }
+function showValidation(errors){
+  var box=q("#calcValidationErrors");if(!box)return;
+  if(!errors||!errors.length){box.classList.add("hidden");box.innerHTML="";return}
+  box.innerHTML="<b>Revise antes de calcular:</b><ul>"+errors.map(function(x){return "<li>"+String(x)+"</li>"}).join("")+"</ul>";
+  box.classList.remove("hidden");
+}
 function setPending(reason){
   var section=q("#resultSection"),button=q("#calculateNowBtn"),status=q("#calcCommitStatus");
   if(!section||!button)return;
@@ -19,20 +25,35 @@ function setPending(reason){
   if(reason==="dirty")button.textContent="Recalcular com as alterações";
   if(status)status.textContent=reason==="dirty"?"Alterações pendentes. Os números abaixo ficam bloqueados até você recalcular.":"Preencha os dados acima e clique em Calcular para liberar os resultados.";
   document.body.dataset.calcConfirmed="false";
+  showValidation([]);
 }
 function confirmCalculation(){
   try{
+    var validation=window.PrecificaPricingEngine&&typeof window.PrecificaPricingEngine.validate==="function"?window.PrecificaPricingEngine.validate():{ok:true,errors:[]};
+    if(!validation.ok){
+      document.body.dataset.calcConfirmed="false";
+      ready=false;
+      showValidation(validation.errors);
+      var status=q("#calcCommitStatus");if(status)status.textContent="Faltam dados obrigatórios. Corrija os itens abaixo e clique em Calcular novamente.";
+      q("#calcCommitCard")?.scrollIntoView({behavior:"smooth",block:"center"});
+      return;
+    }
+    showValidation([]);
+    document.body.dataset.calcConfirmed="true";
     if(typeof calc==="function")calc();
     var section=q("#resultSection"),button=q("#calculateNowBtn"),status=q("#calcCommitStatus");
     if(section)section.classList.remove("calc-result-pending");
     ready=true;
-    document.body.dataset.calcConfirmed="true";
     if(button)button.textContent="Recalcular";
     if(status)status.textContent=stampText();
     document.dispatchEvent(new CustomEvent("precifica:calculated"));
     setTimeout(function(){section?.scrollIntoView({behavior:"smooth",block:"start"})},30);
   }catch(e){
-    var status=q("#calcCommitStatus");if(status)status.textContent="Não foi possível calcular. Revise os campos destacados e tente novamente.";
+    document.body.dataset.calcConfirmed="false";
+    ready=false;
+    if(typeof calc==="function")calc();
+    showValidation([String(e&&e.message||e)]);
+    var status=q("#calcCommitStatus");if(status)status.textContent="O motor bloqueou o cálculo porque encontrou uma condição inválida.";
   }
 }
 function relevantTarget(el){

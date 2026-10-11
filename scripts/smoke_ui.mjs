@@ -52,14 +52,14 @@ window.eval(cons);
 window.eval(consOps);
 window.eval(ui);
 window.eval(manualCalc);
-window.eval(shell);
+window.eval(shell);\nconsole.log("SMOKE: modules evaluated");
 await new Promise(r=>setTimeout(r,100));
 
 const q=(s)=>window.document.querySelector(s);
 const qa=(s)=>[...window.document.querySelectorAll(s)];
 function assert(cond,msg){if(!cond)throw new Error(msg)}
 
-// Workspace navigation: professional dashboard + all calculators remain isolated.
+console.log("SMOKE: after init wait");\n// Workspace navigation: professional dashboard + all calculators remain isolated.
 assert(q(".side-nav"),"left workspace navigation missing");
 assert(qa("[data-workspace-tab]").length===5,"expected 5 workspace tabs");
 assert(window.document.body.dataset.workspace==="home","dashboard must be the default workspace");
@@ -78,7 +78,7 @@ assert(window.document.body.dataset.workspace==="consignment","consignment tab d
 assert(!q("#consignmentSection").classList.contains("workspace-hidden"),"consignment section stayed hidden");
 window.PrecificaUI.activate("calc",{scroll:false});
 
-// Basic UI smoke: calculators must populate instead of staying blank.
+console.log("SMOKE: navigation ok");\n// Basic UI smoke: calculators must populate instead of staying blank.
 assert(q("#priceChoices"),"priceChoices missing");
 assert(q("#compareBody"),"compareBody missing");
 assert(q("#auditCalc"),"auditCalc missing");
@@ -86,13 +86,13 @@ assert(!q("#auditCalc").textContent.includes("Erro interno"),"calculation threw 
 assert(q("#priceChoices").children.length===5,"expected 5 quick price scenarios");
 assert(q("#compareBody").children.length===7,"expected 7 marketplace comparison rows");
 
-// Energy auto reference must become non-zero for Praia Grande -> CPFL Piratininga.
+console.log("SMOKE: basic calc startup ok");\n// Energy auto reference must become non-zero for Praia Grande -> CPFL Piratininga.
 assert(window.state.energyMode==="reference","reference energy must be default");
 assert(Number((q("#distributorSelect").selectedOptions[0]?.dataset.rate)||0)>0,"ANEEL tariff was not loaded");
 assert(!q("#kwhUsed").textContent.includes("0,00"),"energy rate remained zero");
 assert(q("#kwhSource").textContent.includes("ANEEL"),"energy source not marked as ANEEL");
 
-// Feed a real composite-product-like input and ensure all dashboards remain populated.
+console.log("SMOKE: energy ok");\n// Feed a real composite-product-like input and ensure all dashboards remain populated.
 const weight=q('[data-p="weight"]');
 const hours=q('[data-p="hours"]');
 const minutes=q('[data-p="minutes"]');
@@ -119,7 +119,7 @@ q("#calculateNowBtn").click();
 await new Promise(r=>setTimeout(r,20));
 assert(q("#resCost").textContent!==confirmedCost,"confirmed result did not change after weight changed and recalculation");
 
-// Shopee button should keep scenarios and dashboard alive.
+console.log("SMOKE: manual calc flow ok");\n// Shopee button should keep scenarios and dashboard alive.
 const shopee=qa("[data-ch]").find(x=>x.dataset.ch==="shopee");
 shopee.click();
 await new Promise(r=>setTimeout(r,10));
@@ -131,7 +131,7 @@ q("#calculateNowBtn").click();
 await new Promise(r=>setTimeout(r,20));
 assert(window.document.body.dataset.calcConfirmed==="true","recalculation after channel change was not confirmed");
 
-// Consignação: operations dashboard, stores and simulator.
+console.log("SMOKE: channel recalc ok");\n// Consignação: operations dashboard, stores and simulator.
 window.PrecificaUI.activate("consignment",{scroll:false});
 assert(q("#consDashPoints"),"consignment operations dashboard missing");
 assert(qa("[data-cons-area]").length>=3,"consignment area tabs missing");
@@ -202,7 +202,7 @@ assert(q("#consDashPaid").textContent==="1","paid store was not counted in dashb
 
 window.PrecificaUI.activate("calc",{scroll:false});
 
-// Radar de Mercado: deterministic statistics + current calculator integration.
+console.log("SMOKE: consignment ops ok");\n// Radar de Mercado: deterministic statistics + current calculator integration.
 assert(q("#marketSection"),"market section missing");
 assert(q("#catalogSection"),"catalog section missing");
 assert(window.PrecificaMarket,"market module not initialized");
@@ -232,7 +232,7 @@ assert(q("#catalogRows").textContent.includes("Quebra-cabeça teste"),"catalog p
 assert(window.document.body.dataset.workspace==="catalog","saving from Radar should open catalog tab");
 assert(!q("#catalogSection").classList.contains("workspace-hidden"),"catalog section stayed hidden after save");
 
-// Professional shell / account preview must exist without pretending auth is connected.
+console.log("SMOKE: radar/catalog ok");\n// Professional shell / account preview must exist without pretending auth is connected.
 assert(q("#accountModal"),"account preview modal missing");
 q("#openAccount").click();
 assert(q("#accountModal").classList.contains("show"),"account modal did not open");

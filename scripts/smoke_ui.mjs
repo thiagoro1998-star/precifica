@@ -42,6 +42,7 @@ window.eval(market);
 window.eval(consMath);
 window.eval(cons);
 window.eval(ui);
+window.eval(shell);
 await new Promise(r=>setTimeout(r,100));
 
 const q=(s)=>window.document.querySelector(s);

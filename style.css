@@ -522,18 +522,18 @@ tbody tr:last-child td{border-bottom:0}
 #catalogRows .icon{width:34px;height:34px}
 
 /* Result section: visually stronger, but still sober */
-#workspaceGrid>section:nth-child(7){
+#resultSection{
   border-color:#dfe4ea;
   box-shadow:0 14px 38px rgba(16,24,40,.07)
 }
-#workspaceGrid>section:nth-child(7) .ch{
+#resultSection .ch{
   background:linear-gradient(180deg,#fffaf6 0,#fff 100%)
 }
-#workspaceGrid>section:nth-child(7) .stat.a{
+#resultSection .stat.a{
   border-color:#ffbf95;
   background:linear-gradient(145deg,#fff7f0,#ffede1)
 }
-#workspaceGrid>section:nth-child(7) .stat.a .v{color:#c94c00}
+#resultSection .stat.a .v{color:#c94c00}
 
 /* Footer / utilities */
 .footer{padding:28px 8px 12px;text-align:center;color:#98a2b3;font-size:9.5px}
@@ -796,12 +796,12 @@ body{
 
 /* Section color system */
 #workspaceGrid>section{--section-accent:#ff6517;--section-soft:#fff4ed}
-#workspaceGrid>section:nth-child(2){--section-accent:#f18a24;--section-soft:#fff7e9}
-#workspaceGrid>section:nth-child(3){--section-accent:#4777d8;--section-soft:#eff5ff}
-#workspaceGrid>section:nth-child(4){--section-accent:#7658d8;--section-soft:#f4f1ff}
-#workspaceGrid>section:nth-child(5){--section-accent:#24966d;--section-soft:#edf9f4}
-#workspaceGrid>section:nth-child(6){--section-accent:#db6328;--section-soft:#fff2ea}
-#workspaceGrid>section:nth-child(7){--section-accent:#ff6517;--section-soft:#fff3eb}
+#materialSection{--section-accent:#f18a24;--section-soft:#fff7e9}
+#printerSection{--section-accent:#4777d8;--section-soft:#eff5ff}
+#finalSection{--section-accent:#7658d8;--section-soft:#f4f1ff}
+#taxSection{--section-accent:#24966d;--section-soft:#edf9f4}
+#pricingSection{--section-accent:#db6328;--section-soft:#fff2ea}
+#resultSection{--section-accent:#ff6517;--section-soft:#fff3eb}
 
 /* Cards no longer look like blank white sheets */
 .card{
@@ -922,16 +922,16 @@ label{color:#39465a}
 }
 
 /* Material card: compact, no fake empty panel feeling */
-#workspaceGrid>section:nth-child(2) .cb{padding-bottom:18px}
-#workspaceGrid>section:nth-child(2) .stats .stat:nth-child(1){
+#materialSection .cb{padding-bottom:18px}
+#materialSection .stats .stat:nth-child(1){
   background:linear-gradient(145deg,#f6fbff,#eef6fd)
 }
-#workspaceGrid>section:nth-child(2) .stats .stat:nth-child(2){
+#materialSection .stats .stat:nth-child(2){
   background:linear-gradient(145deg,#f8f8ff,#f1f1fb)
 }
 
 /* Energy block gains a technical dashboard treatment */
-#workspaceGrid>section:nth-child(3) .box{
+#printerSection .box{
   position:relative;
   overflow:hidden;
   border-color:#d8e2ef;
@@ -939,12 +939,12 @@ label{color:#39465a}
     radial-gradient(circle at 100% 0,rgba(71,119,216,.09),transparent 16rem),
     linear-gradient(180deg,#f8fbff,#f2f7fc)
 }
-#workspaceGrid>section:nth-child(3) .box>.title{
+#printerSection .box>.title{
   display:flex;
   align-items:center;
   gap:7px
 }
-#workspaceGrid>section:nth-child(3) .box>.title:before{
+#printerSection .box>.title:before{
   content:"";
   width:8px;height:8px;
   border-radius:2px;
@@ -953,43 +953,43 @@ label{color:#39465a}
 }
 
 /* Result is the visual payoff */
-#workspaceGrid>section:nth-child(7){
+#resultSection{
   overflow:hidden;
   border-color:#202c3d;
   background:linear-gradient(180deg,#172235 0,#111a29 100%);
   box-shadow:0 18px 44px rgba(14,23,38,.16)
 }
-#workspaceGrid>section:nth-child(7) .ch{
+#resultSection .ch{
   color:#fff;
   border-bottom-color:rgba(255,255,255,.08);
   background:
     radial-gradient(circle at 86% 0,rgba(255,101,23,.18),transparent 20rem),
     linear-gradient(135deg,#172438,#111b2a)
 }
-#workspaceGrid>section:nth-child(7) .ch h2{color:#fff}
-#workspaceGrid>section:nth-child(7) .ch .muted{color:#9eabbc}
-#workspaceGrid>section:nth-child(7) .num{
+#resultSection .ch h2{color:#fff}
+#resultSection .ch .muted{color:#9eabbc}
+#resultSection .num{
   color:#fff;
   border-color:rgba(255,126,58,.25);
   background:rgba(255,101,23,.16)
 }
-#workspaceGrid>section:nth-child(7) .cb{
+#resultSection .cb{
   background:linear-gradient(180deg,#f8fafc,#f3f6f9)
 }
-#workspaceGrid>section:nth-child(7) .stats{
+#resultSection .stats{
   grid-template-columns:repeat(6,minmax(0,1fr))
 }
-#workspaceGrid>section:nth-child(7) .stat{
+#resultSection .stat{
   min-height:84px;
   display:flex;
   flex-direction:column;
   justify-content:center
 }
-#workspaceGrid>section:nth-child(7) .stat.a{
+#resultSection .stat.a{
   border-color:#ffb985;
   background:linear-gradient(145deg,#fff1e5,#ffe5d2)
 }
-#workspaceGrid>section:nth-child(7) .stat.a .v{color:#c94a00}
+#resultSection .stat.a .v{color:#c94a00}
 
 /* Channel buttons become cleaner app tabs */
 .tabs{
@@ -1028,7 +1028,7 @@ tbody tr:hover{background:#fff7f1}
 /* Responsive: keep the new visual language without clutter */
 @media(max-width:1100px){
   .workspace{grid-template-columns:196px minmax(0,1fr)}
-  #workspaceGrid>section:nth-child(7) .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #resultSection .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media(max-width:900px){
   body{
@@ -1059,7 +1059,7 @@ tbody tr:hover{background:#fff7f1}
   .cb{padding:13px}
   .pills{width:100%;border-radius:12px;justify-content:stretch}
   .pills>.pill{flex:1;border-radius:9px;white-space:normal}
-  #workspaceGrid>section:nth-child(7) .stats{grid-template-columns:1fr 1fr}
+  #resultSection .stats{grid-template-columns:1fr 1fr}
 }
 @media(max-width:430px){
   .head{box-shadow:0 6px 20px rgba(15,23,42,.07)}
@@ -1068,7 +1068,7 @@ tbody tr:hover{background:#fff7f1}
   .side-tab.active{box-shadow:inset 0 -2px 0 #ff6517}
   .side-tab-copy strong{font-size:10px}
   .ch:after{display:none}
-  #workspaceGrid>section:nth-child(7) .stats{grid-template-columns:1fr 1fr}
+  #resultSection .stats{grid-template-columns:1fr 1fr}
 }
 
 

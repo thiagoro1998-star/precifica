@@ -6,12 +6,14 @@ const html=fs.readFileSync("index.html","utf8")
   .replace(/<script[^>]*src="\.\/market\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/consignment-math\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/consignment\.js[^"]*"[^>]*><\/script>/,"")
-  .replace(/<script[^>]*src="\.\/ui\.js[^"]*"[^>]*><\/script>/,"");
+  .replace(/<script[^>]*src="\.\/ui\.js[^"]*"[^>]*><\/script>/,"")
+  .replace(/<script[^>]*src="\.\/shell\.js[^"]*"[^>]*><\/script>/,"");
 const app=fs.readFileSync("app.js","utf8");
 const market=fs.readFileSync("market.js","utf8");
 const consMath=fs.readFileSync("consignment-math.js","utf8");
 const cons=fs.readFileSync("consignment.js","utf8");
 const ui=fs.readFileSync("ui.js","utf8");
+const shell=fs.readFileSync("shell.js","utf8");
 
 const dom=new JSDOM(html,{runScripts:"outside-only",url:"https://example.test/precifica/"});
 const {window}=dom;
@@ -40,22 +42,27 @@ window.eval(market);
 window.eval(consMath);
 window.eval(cons);
 window.eval(ui);
+window.eval(shell);
 await new Promise(r=>setTimeout(r,100));
 
 const q=(s)=>window.document.querySelector(s);
 const qa=(s)=>[...window.document.querySelectorAll(s)];
 function assert(cond,msg){if(!cond)throw new Error(msg)}
 
-// Workspace navigation: calculator, market and catalog must be isolated in intuitive tabs.
+// Workspace navigation: professional dashboard + all calculators remain isolated.
 assert(q(".side-nav"),"left workspace navigation missing");
-assert(qa("[data-workspace-tab]").length===4,"expected 4 workspace tabs");
-assert(window.document.body.dataset.workspace==="calc","calculator must be the default workspace");
-assert(!q("#workspaceGrid > section").classList.contains("workspace-hidden"),"calculator section hidden on startup");
-assert(q("#marketSection").classList.contains("workspace-hidden"),"market should be hidden on calculator tab");
+assert(qa("[data-workspace-tab]").length===5,"expected 5 workspace tabs");
+assert(window.document.body.dataset.workspace==="home","dashboard must be the default workspace");
+assert(!q("#homeSection").classList.contains("workspace-hidden"),"dashboard hidden on startup");
+assert(q("#marketSection").classList.contains("workspace-hidden"),"market should be hidden on dashboard");
+assert(qa("[data-open-workspace]").length>=4,"dashboard shortcuts missing");
+q('[data-open-workspace="calc"]').click();
+await new Promise(r=>setTimeout(r,5));
+assert(window.document.body.dataset.workspace==="calc","dashboard shortcut did not open calculator");
+assert(q("#homeSection").classList.contains("workspace-hidden"),"dashboard stayed visible on calculator");
 q('[data-workspace-tab="market"]').click();
 assert(window.document.body.dataset.workspace==="market","market tab did not activate");
 assert(!q("#marketSection").classList.contains("workspace-hidden"),"market section stayed hidden");
-assert(q("#workspaceGrid > section").classList.contains("workspace-hidden"),"calculator stayed visible on market tab");
 q('[data-workspace-tab="consignment"]').click();
 assert(window.document.body.dataset.workspace==="consignment","consignment tab did not activate");
 assert(!q("#consignmentSection").classList.contains("workspace-hidden"),"consignment section stayed hidden");
@@ -164,4 +171,15 @@ assert(q("#catalogRows").textContent.includes("Quebra-cabeça teste"),"catalog p
 assert(window.document.body.dataset.workspace==="catalog","saving from Radar should open catalog tab");
 assert(!q("#catalogSection").classList.contains("workspace-hidden"),"catalog section stayed hidden after save");
 
+// Professional shell / account preview must exist without pretending auth is connected.
+assert(q("#accountModal"),"account preview modal missing");
+q("#openAccount").click();
+assert(q("#accountModal").classList.contains("show"),"account modal did not open");
+assert(qa("[data-auth-tab]").length===2,"login/create-account tabs missing");
+assert(q("#saveLocalProfile"),"local profile fallback missing");
+q("#closeAccount").click();
+assert(!q("#accountModal").classList.contains("show"),"account modal did not close");
+
 console.log("UI smoke verification: OK");
+window.close();
+process.exit(0);

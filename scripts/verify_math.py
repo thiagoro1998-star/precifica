@@ -1,48 +1,145 @@
 #!/usr/bin/env python3
-from math import isclose
+from math import isclose, isfinite
+import random
 
-def solve_profit(cost, profit, pct=0, fixed=0, extra_pct=0, extra_fixed=0):
-    denom=1-(pct+extra_pct)/100
-    assert denom>0
-    return (cost+profit+fixed+extra_fixed)/denom
+EPS=1e-7
 
-def margin(price,cost,fees=0):
-    return (price-cost-fees)/price*100 if price else 0
+def shopee_fee(price):
+    # Regra configurada no app para vigência a partir de 01/10/2026.
+    if price < 8:
+        return price*.20 + price*.50
+    if price < 80:
+        return price*.20 + 4.50
+    if price < 100:
+        return price*.14 + 16
+    if price < 200:
+        return price*.14 + 20
+    return price*.14 + 26
 
-# Direct sale: cost 2.91 + desired net profit 10.
-assert isclose(solve_profit(2.91,10),12.91,abs_tol=1e-9)
+def ml_fee(price,premium=False):
+    pct=.19 if premium else .14
+    if price < 12.5:
+        fixed=price*.50
+    elif price < 29:
+        fixed=6.25
+    elif price < 50:
+        fixed=6.50
+    elif price < 79:
+        fixed=6.75
+    else:
+        fixed=0
+    return price*pct+fixed
 
-# Shopee current low-price rule used by app before 01/10/2026: 20% + R$4.
-p=solve_profit(2.91,10,20,4)
-assert isclose(p,21.1375,abs_tol=1e-9)
-fees=p*.20+4
-assert isclose(p-fees-2.91,10,abs_tol=1e-9)
+def amazon_fee(price):
+    return price*.12+2
 
-# Amazon Casa / individual in current app: 12% + R$2 per item.
-p=solve_profit(2.91,10,12,2)
-assert isclose(p,16.943181818181817,abs_tol=1e-9)
+def tiktok_fee(price):
+    return price*.10+4 if price < 50 else price*.06+6
 
-# TikTok Shop under R$50: 10% + R$4.
-p=solve_profit(2.91,10,10,4)
-assert isclose(p,18.788888888888888,abs_tol=1e-9)
+def profit_at(price,cost,fee_fn=lambda p:0,tax_pct=0,loss_pct=0,cac=0):
+    return price-cost-fee_fn(price)-price*tax_pct/100-price*loss_pct/100-cac
 
-# Composite puzzle example from Bambu Studio: frame + inserts.
-weight=42.95+13.88
-filament_cost=weight*(65/1000)
-assert isclose(weight,56.83,abs_tol=1e-9)
-assert isclose(filament_cost,3.69395,abs_tol=1e-9)
+def solve_binary(cost,target,fee_fn=lambda p:0,tax_pct=0,loss_pct=0,cac=0):
+    lo=0.0
+    hi=max(1.0,cost+target+cac+1)
+    for _ in range(100):
+        if profit_at(hi,cost,fee_fn,tax_pct,loss_pct,cac) >= target:
+            break
+        hi*=1.7
+        assert isfinite(hi) and hi<10_000_000
+    else:
+        raise AssertionError("no viable upper bound")
+    for _ in range(120):
+        mid=(lo+hi)/2
+        if profit_at(mid,cost,fee_fn,tax_pct,loss_pct,cac)>=target:
+            hi=mid
+        else:
+            lo=mid
+    return hi
 
-# Energy example: two sequential jobs, total 3h49m, A1 planning average 95W,
-# CPFL Piratininga B1 current snapshot R$0.73969/kWh.
-hours=3+49/60
-energy=hours*(95/1000)*0.73969
-assert isclose(energy,0.2681992658333333,abs_tol=1e-12)
+def unit_production(weight_g,hours,outputs,filament_per_g,watts,kwh,maintenance_h,failure_pct=0):
+    assert outputs>0
+    mult=1+failure_pct/100
+    filament=weight_g*filament_per_g*mult/outputs
+    energy=hours*watts/1000*kwh/outputs
+    maintenance=hours*maintenance_h/outputs
+    return filament+energy+maintenance
 
-# Markup and margin are not the same thing.
+# 1) Custo de produção conhecido.
+cost=unit_production(
+    weight_g=56.83,
+    hours=3+49/60,
+    outputs=1,
+    filament_per_g=65/1000,
+    watts=95,
+    kwh=.73969,
+    maintenance_h=.30,
+)
+expected_filament=56.83*(65/1000)
+expected_energy=(3+49/60)*.095*.73969
+expected_maintenance=(3+49/60)*.30
+assert isclose(cost,expected_filament+expected_energy+expected_maintenance,abs_tol=1e-12)
+
+# 2) Divisão correta quando uma mesa gera várias unidades.
+one=unit_production(100,2,1,.065,95,.73969,.30)
+four=unit_production(100,2,4,.065,95,.73969,.30)
+assert isclose(four,one/4,rel_tol=0,abs_tol=1e-12)
+
+# 3) Produto composto soma componentes já normalizados pela quantidade atendida.
+a=unit_production(40,2,2,.065,95,.73969,.30)
+b=unit_production(20,1,4,.065,95,.73969,.30)
+assert isclose(a+b,(40*.065+2*.095*.73969+2*.30)/2+(20*.065+1*.095*.73969+1*.30)/4,abs_tol=1e-12)
+
+# 4) Venda direta: preço = custo + lucro quando não há descontos.
+p=solve_binary(2.91,10)
+assert isclose(p,12.91,abs_tol=EPS)
+assert isclose(profit_at(p,2.91),10,abs_tol=EPS)
+
+# 5) Marketplaces com taxas configuradas: solver tem de devolver o lucro líquido exato.
+for fee in (shopee_fee,lambda p:ml_fee(p,False),lambda p:ml_fee(p,True),amazon_fee,tiktok_fee):
+    for c in (1.25,2.91,8.40,25.00,85.00):
+        for target in (0,5,10,30):
+            p=solve_binary(c,target,fee)
+            got=profit_at(p,c,fee)
+            assert isfinite(p) and p>=0
+            assert isclose(got,target,abs_tol=2e-6), (fee.__name__,c,target,p,got)
+
+# 6) Imposto, perdas e CAC entram separadamente e sem dupla contagem.
+p=solve_binary(10,15,lambda x:x*.20+4.5,tax_pct=6,loss_pct=1,cac=2)
+assert isclose(profit_at(p,10,lambda x:x*.20+4.5,6,1,2),15,abs_tol=2e-6)
+
+# 7) Margem e markup são grandezas diferentes.
 price=21.1375
-markup=(price/2.91-1)*100
-m=(price-2.91-(price*.20+4))/price*100
+base_cost=2.91
+fees=price*.20+4
+markup=(price/base_cost-1)*100
+margin=(price-base_cost-fees)/price*100
 assert markup>600
-assert 47<m<48
+assert 47<margin<48
+assert not isclose(markup,margin,abs_tol=1e-9)
 
-print("Math verification: OK")
+# 8) Robustez por propriedade: centenas de combinações válidas nunca geram NaN/Infinity
+# e o lucro resolvido deve bater a meta.
+rng=random.Random(20261011)
+fee_fns=[lambda p:0,shopee_fee,lambda p:ml_fee(p,False),amazon_fee,tiktok_fee]
+for _ in range(1200):
+    c=rng.uniform(.01,500)
+    target=rng.uniform(0,300)
+    tax=rng.uniform(0,12)
+    loss=rng.uniform(0,5)
+    cac=rng.uniform(0,20)
+    fee=fee_fns[rng.randrange(len(fee_fns))]
+    p=solve_binary(c,target,fee,tax,loss,cac)
+    got=profit_at(p,c,fee,tax,loss,cac)
+    assert isfinite(p) and 0<=p<10_000_000
+    assert isclose(got,target,abs_tol=5e-5), (c,target,tax,loss,cac,p,got)
+
+# 9) Guardas conceituais do front-end: entradas obrigatórias zeradas não são válidas.
+def valid_required(weight,hours,qty,filament_price,filament_weight,watts,kwh):
+    return all(x>0 for x in (weight,hours,qty,filament_price,filament_weight,watts,kwh))
+assert not valid_required(0,1,1,65,1000,95,.73969)
+assert not valid_required(10,0,1,65,1000,95,.73969)
+assert not valid_required(10,1,0,65,1000,95,.73969)
+assert valid_required(10,1,1,65,1000,95,.73969)
+
+print("Math verification: OK — deterministic, nonlinear marketplace and 1200 randomized invariant cases")

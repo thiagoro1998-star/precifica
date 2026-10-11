@@ -277,26 +277,44 @@ function resultAt(price,ch){
  var c=costs(),f=fee(price,ch),tx=tax(),taxv=price*tx.rate/100+tx.fixed,los=price*loss()/100,ad=cac(),profit=price-c.total-f.total-taxv-los-ad;
  return{price:price,c:c,f:f,taxv:taxv,loss:los,ads:ad,profit:profit,received:price-f.total-taxv-los-ad,margin:price?profit/price*100:0,markup:c.total?(price/c.total-1)*100:0}
 }
+function channelBreakpoints(ch){
+ if(ch==="shopee")return[0,8,80,100,200];
+ if(ch==="mlclassic"||ch==="mlpremium")return[0,12.5,29,50,79];
+ if(ch==="tiktok")return[0,50];
+ return[0];
+}
+function solveSegment(ch,predicate){
+ var bp=channelBreakpoints(ch),MAX_PRICE=10000000,EPS=.0000001,candidates=[];
+ function test(x){var r=resultAt(x,ch);return Number.isFinite(x)&&Number.isFinite(r.profit)&&Number.isFinite(r.margin)&&predicate(r)}
+ for(var si=0;si<bp.length;si++){
+   var a=bp[si],b=si+1<bp.length?bp[si+1]:null;
+   if(test(a)){candidates.push(a);continue}
+   if(b!==null){
+     var right=Math.max(a,b-EPS);
+     if(!test(right))continue;
+     var lo=a,hi=right;
+     for(var j=0;j<100;j++){var mid=(lo+hi)/2;if(test(mid))hi=mid;else lo=mid}
+     candidates.push(hi);
+   }else{
+     var lo=a,hi=Math.max(a+1,costs().total+20),guard=0;
+     while(!test(hi)&&guard++<100){hi*=1.7;if(!Number.isFinite(hi)||hi>MAX_PRICE)break}
+     if(!test(hi))continue;
+     for(var k=0;k<110;k++){var mid2=(lo+hi)/2;if(test(mid2))hi=mid2;else lo=mid2}
+     candidates.push(hi);
+   }
+ }
+ if(!candidates.length)throw new Error("Não existe preço viável com as taxas e metas informadas.");
+ var best=Math.min.apply(Math,candidates);
+ if(!Number.isFinite(best)||best<0||best>MAX_PRICE)throw new Error("Preço calculado fora do limite de segurança.");
+ return best;
+}
 function priceFor(target,ch){
  target=Math.max(0,num(target));
- var lo=0,hi=Math.max(1,costs().total+target+1),i,MAX_PRICE=10000000;
- for(i=0;i<80&&resultAt(hi,ch).profit<target;i++){
-   hi*=1.7;
-   if(!Number.isFinite(hi)||hi>MAX_PRICE)throw new Error("Não foi possível encontrar preço viável: revise taxas, impostos e reservas.");
- }
- for(i=0;i<100;i++){var mid=(lo+hi)/2;if(resultAt(mid,ch).profit>=target)hi=mid;else lo=mid}
- if(!Number.isFinite(hi)||hi<0)throw new Error("Preço calculado inválido.");
- return hi
+ return solveSegment(ch,function(r){return r.profit+1e-9>=target});
 }
 function priceForMargin(targetPct,ch){
- var target=Math.max(0,Math.min(95,num(targetPct)))/100,lo=0,hi=Math.max(1,costs().total*3+1),i,MAX_PRICE=10000000;
- for(i=0;i<80&&resultAt(hi,ch).margin/100<target;i++){
-   hi*=1.7;
-   if(!Number.isFinite(hi)||hi>MAX_PRICE)throw new Error("Margem inviável com as taxas atuais.");
- }
- for(i=0;i<100;i++){var mid=(lo+hi)/2;if(resultAt(mid,ch).margin/100>=target)hi=mid;else lo=mid}
- if(!Number.isFinite(hi)||hi<0)throw new Error("Preço por margem inválido.");
- return hi
+ var target=Math.max(0,Math.min(95,num(targetPct)));
+ return solveSegment(ch,function(r){return r.margin+1e-9>=target});
 }
 function suggested(){
  var c=costs(),p=$("#suggestProfile").value,m=p==="economic"?1.7:p==="strong"?4.5:2.8,f=p==="economic"?5:p==="strong"?20:10,h=p==="economic"?1.5:p==="strong"?4:2.5;return Math.max(f,c.total*m,c.hoursPerUnit*h)
@@ -331,6 +349,10 @@ function validateCalculation(){
  if(taxRate<0||taxRate>=100)errors.push("A alíquota de imposto deve ficar entre 0% e menos de 100%.");
  if(lossRate<0||lossRate>=100)errors.push("A reserva de perdas deve ficar entre 0% e menos de 100%.");
  if(override!==null&&(override<0||override>=100))errors.push("A comissão manual deve ficar entre 0% e menos de 100%.");
+ try{
+   var p1=resultAt(500000,state.channel),p2=resultAt(1000000,state.channel);
+   if(!Number.isFinite(p1.profit)||!Number.isFinite(p2.profit)||p2.profit<=p1.profit)errors.push("A soma de comissões, impostos e reservas torna a venda inviável: o lucro não cresce quando o preço aumenta.");
+ }catch(e){errors.push("Não foi possível validar a combinação de taxas informada.");}
  if(state.priceMode==="margin"&&(num($("#targetMargin").value)<=0||num($("#targetMargin").value)>95))errors.push("A margem desejada deve ser maior que 0% e no máximo 95%.");
  if(state.priceMode==="markup"&&num($("#targetMarkup").value)<0)errors.push("O markup não pode ser negativo.");
  if(state.priceMode==="profit"&&num($("#targetProfit").value)<0)errors.push("O lucro desejado não pode ser negativo.");

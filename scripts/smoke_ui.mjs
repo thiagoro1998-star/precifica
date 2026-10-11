@@ -1,18 +1,25 @@
 import fs from "node:fs";
 import {JSDOM} from "jsdom";
 
+process.on("uncaughtException",(err)=>{console.error(err);process.exit(1)});
+process.on("unhandledRejection",(err)=>{console.error(err);process.exit(1)});
+
 const html=fs.readFileSync("index.html","utf8")
   .replace(/<script[^>]*src="\.\/app\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/market\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/consignment-math\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/consignment\.js[^"]*"[^>]*><\/script>/,"")
+  .replace(/<script[^>]*src="\.\/consignment-ops\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/ui\.js[^"]*"[^>]*><\/script>/,"")
+  .replace(/<script[^>]*src="\.\/manual-calc\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/shell\.js[^"]*"[^>]*><\/script>/,"");
 const app=fs.readFileSync("app.js","utf8");
 const market=fs.readFileSync("market.js","utf8");
 const consMath=fs.readFileSync("consignment-math.js","utf8");
 const cons=fs.readFileSync("consignment.js","utf8");
+const consOps=fs.readFileSync("consignment-ops.js","utf8");
 const ui=fs.readFileSync("ui.js","utf8");
+const manualCalc=fs.readFileSync("manual-calc.js","utf8");
 const shell=fs.readFileSync("shell.js","utf8");
 
 const dom=new JSDOM(html,{runScripts:"outside-only",url:"https://example.test/precifica/"});
@@ -41,14 +48,18 @@ window.eval(app);
 window.eval(market);
 window.eval(consMath);
 window.eval(cons);
+window.eval(consOps);
 window.eval(ui);
+window.eval(manualCalc);
 window.eval(shell);
+console.log("SMOKE: modules evaluated");
 await new Promise(r=>setTimeout(r,100));
 
 const q=(s)=>window.document.querySelector(s);
 const qa=(s)=>[...window.document.querySelectorAll(s)];
 function assert(cond,msg){if(!cond)throw new Error(msg)}
 
+console.log("SMOKE: after init wait");
 // Workspace navigation: professional dashboard + all calculators remain isolated.
 assert(q(".side-nav"),"left workspace navigation missing");
 assert(qa("[data-workspace-tab]").length===5,"expected 5 workspace tabs");
@@ -68,6 +79,7 @@ assert(window.document.body.dataset.workspace==="consignment","consignment tab d
 assert(!q("#consignmentSection").classList.contains("workspace-hidden"),"consignment section stayed hidden");
 window.PrecificaUI.activate("calc",{scroll:false});
 
+console.log("SMOKE: navigation ok");
 // Basic UI smoke: calculators must populate instead of staying blank.
 assert(q("#priceChoices"),"priceChoices missing");
 assert(q("#compareBody"),"compareBody missing");
@@ -76,12 +88,14 @@ assert(!q("#auditCalc").textContent.includes("Erro interno"),"calculation threw 
 assert(q("#priceChoices").children.length===5,"expected 5 quick price scenarios");
 assert(q("#compareBody").children.length===7,"expected 7 marketplace comparison rows");
 
+console.log("SMOKE: basic calc startup ok");
 // Energy auto reference must become non-zero for Praia Grande -> CPFL Piratininga.
 assert(window.state.energyMode==="reference","reference energy must be default");
 assert(Number((q("#distributorSelect").selectedOptions[0]?.dataset.rate)||0)>0,"ANEEL tariff was not loaded");
 assert(!q("#kwhUsed").textContent.includes("0,00"),"energy rate remained zero");
 assert(q("#kwhSource").textContent.includes("ANEEL"),"energy source not marked as ANEEL");
 
+console.log("SMOKE: energy ok");
 // Feed a real composite-product-like input and ensure all dashboards remain populated.
 const weight=q('[data-p="weight"]');
 const hours=q('[data-p="hours"]');
@@ -91,11 +105,25 @@ hours.value="3"; hours.dispatchEvent(new window.Event("input",{bubbles:true}));
 minutes.value="49"; minutes.dispatchEvent(new window.Event("input",{bubbles:true}));
 await new Promise(r=>setTimeout(r,20));
 
-assert(!q("#resCost").textContent.includes("R$ 0,00"),"cost stayed zero after input");
+assert(q("#resultSection").classList.contains("calc-result-pending"),"results should stay blocked until Calculate is clicked");
+assert(window.document.body.dataset.calcConfirmed==="false","calculation should not be confirmed automatically");
+q("#calculateNowBtn").click();
+await new Promise(r=>setTimeout(r,20));
+assert(!q("#resultSection").classList.contains("calc-result-pending"),"Calculate button did not release results");
+assert(window.document.body.dataset.calcConfirmed==="true","confirmed calculation flag missing");
+assert(!q("#resCost").textContent.includes("R$ 0,00"),"cost stayed zero after confirmed calculation");
 assert(q("#costBreakdown").children.length>=7,"cost breakdown not rendered");
 assert(q("#feeBreakdown").children.length>=6,"fee breakdown not rendered");
 assert(q("#compareBody").children.length===7,"marketplace dashboard disappeared after calculation");
+const confirmedCost=q("#resCost").textContent;
+weight.value="70";weight.dispatchEvent(new window.Event("input",{bubbles:true}));
+await new Promise(r=>setTimeout(r,10));
+assert(q("#resultSection").classList.contains("calc-result-pending"),"editing an input must require recalculation");
+q("#calculateNowBtn").click();
+await new Promise(r=>setTimeout(r,20));
+assert(q("#resCost").textContent!==confirmedCost,"confirmed result did not change after weight changed and recalculation");
 
+console.log("SMOKE: manual calc flow ok");
 // Shopee button should keep scenarios and dashboard alive.
 const shopee=qa("[data-ch]").find(x=>x.dataset.ch==="shopee");
 shopee.click();
@@ -103,10 +131,19 @@ await new Promise(r=>setTimeout(r,10));
 assert(q("#priceChoices").children.length===5,"quick scenarios disappeared on Shopee");
 assert(q("#compareBody").children.length===7,"comparison rows disappeared on Shopee");
 assert(!q("#auditCalc").textContent.includes("Erro interno"),"calculation error after Shopee selection");
+assert(q("#resultSection").classList.contains("calc-result-pending"),"channel change should require recalculation");
+q("#calculateNowBtn").click();
+await new Promise(r=>setTimeout(r,20));
+assert(window.document.body.dataset.calcConfirmed==="true","recalculation after channel change was not confirmed");
 
-// Consignação: beginner mode, selectable presets, import and deterministic values.
+console.log("SMOKE: channel recalc ok");
+// Consignação: operations dashboard, stores and simulator.
 window.PrecificaUI.activate("consignment",{scroll:false});
-assert(!q(".cons-simple-only").classList.contains("hidden"),"simple consignation mode should be visible by default");
+assert(q("#consDashPoints"),"consignment operations dashboard missing");
+assert(qa("[data-cons-area]").length>=3,"consignment area tabs missing");
+assert(!q('[data-cons-area-panel="dashboard"]').classList.contains("hidden"),"consignment dashboard should open first");
+window.PrecificaConsignmentOps.setArea("simulator");
+assert(!q(".cons-simple-only").classList.contains("hidden"),"simple consignation mode should be visible in simulator");
 assert(qa("[data-cons-ui]").length===2,"simple/full selector missing");
 assert(qa('.quick-chip[data-quick-key="salePrice"]').length===4,"quick price options missing");
 assert(qa('.quick-chip[data-quick-key="commissionPct"]').length===4,"quick commission options missing");
@@ -130,6 +167,10 @@ q("#consSalePrice").value="7.90";q("#consSalePrice").dispatchEvent(new window.Ev
 q("#consCommission").value="30";q("#consCommission").dispatchEvent(new window.Event("input",{bubbles:true}));
 q("#consOtherFees").value="0";q("#consOtherFees").dispatchEvent(new window.Event("input",{bubbles:true}));
 await new Promise(r=>setTimeout(r,10));
+assert(!q("#consSimulatorPanel").classList.contains("cons-sim-ready"),"simulator should require explicit Calculate");
+q("#consCalculateNow").click();
+await new Promise(r=>setTimeout(r,10));
+assert(q("#consSimulatorPanel").classList.contains("cons-sim-ready"),"consignment Calculate button did not release results");
 assert(q("#quickConsResults").textContent.includes("R$ 2,37")||q("#quickConsResults").textContent.includes("R$ 2,37"),"quick result store commission missing");
 assert(q("#quickConsResults").textContent.includes("R$ 5,53")||q("#quickConsResults").textContent.includes("R$ 5,53"),"quick result producer payout missing");
 assert(q("#quickConsResults").textContent.includes("R$ 4,03")||q("#quickConsResults").textContent.includes("R$ 4,03"),"quick result producer profit missing");
@@ -139,8 +180,35 @@ q('[data-cons-ui="full"]').click();
 assert(!q("#consResults").classList.contains("hidden"),"full detailed results did not open");
 assert(q("#consResults").textContent.includes("R$ 4,03")||q("#consResults").textContent.includes("R$ 4,03"),"detailed producer profit missing");
 assert(q("#consScenarioBody").children.length===16,"scenario simulator should have 16 rows");
+
+// Store ledger: add point, register sale, partial payment and settle.
+window.PrecificaConsignmentOps.setArea("stores");
+q("#storeName").value="Loja Teste";
+q("#storeAddress").value="Centro";
+q("#storeProduct").value="Chaveiro";
+q("#storeQty").value="10";
+q("#storePrice").value="10";
+q("#storeCommission").value="30";
+q("#addConsStore").click();
+await new Promise(r=>setTimeout(r,10));
+assert(q("#consDashPoints").textContent==="1","store dashboard did not count the new point");
+assert(q("#detailStock").textContent.includes("10"),"initial consigned stock wrong");
+q("#movementSaleQty").value="3";q("#registerStoreSale").click();
+await new Promise(r=>setTimeout(r,10));
+assert(q("#detailStock").textContent.includes("7"),"stock did not fall after sale");
+assert(q("#detailDue").textContent.includes("21,00"),"receivable should be R$ 21,00 after 3 sales at R$10 with 30% commission");
+q("#movementPayment").value="10";q("#registerStorePayment").click();
+await new Promise(r=>setTimeout(r,10));
+assert(q("#detailDue").textContent.includes("11,00"),"partial payment did not reduce amount due");
+q("#settleStore").click();
+await new Promise(r=>setTimeout(r,10));
+assert(q("#detailDue").textContent.includes("0,00"),"settling store did not clear amount due");
+window.PrecificaConsignmentOps.setArea("dashboard");
+assert(q("#consDashPaid").textContent==="1","paid store was not counted in dashboard");
+
 window.PrecificaUI.activate("calc",{scroll:false});
 
+console.log("SMOKE: consignment ops ok");
 // Radar de Mercado: deterministic statistics + current calculator integration.
 assert(q("#marketSection"),"market section missing");
 assert(q("#catalogSection"),"catalog section missing");
@@ -171,6 +239,7 @@ assert(q("#catalogRows").textContent.includes("Quebra-cabeça teste"),"catalog p
 assert(window.document.body.dataset.workspace==="catalog","saving from Radar should open catalog tab");
 assert(!q("#catalogSection").classList.contains("workspace-hidden"),"catalog section stayed hidden after save");
 
+console.log("SMOKE: radar/catalog ok");
 // Professional shell / account preview must exist without pretending auth is connected.
 assert(q("#accountModal"),"account preview modal missing");
 q("#openAccount").click();

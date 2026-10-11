@@ -23,6 +23,8 @@ jobs:
           node --check consignment.js
           node --check ui.js
           node --check shell.js
+          node --check manual-calc.js
+          node --check consignment-ops.js
 
       - name: Verify deterministic pricing math
         run: |
@@ -47,7 +49,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir -p dist
-          cp index.html style.css pro-ui.css app.js market.js consignment-math.js consignment.js ui.js shell.js tariffs.json favicon.svg dist/
+          cp index.html style.css pro-ui.css operations.css app.js market.js consignment-math.js consignment.js consignment-ops.js ui.js manual-calc.js shell.js tariffs.json favicon.svg dist/
 
       - name: Refresh ANEEL residential tariff snapshot
         continue-on-error: true

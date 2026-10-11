@@ -92,12 +92,8 @@ function initAuth(){
   profileUI();
 }
 function initObservers(){
-  var target=q("#resultSection");
-  if(target&&window.MutationObserver){
-    new MutationObserver(function(){updateDashboard()}).observe(target,{subtree:true,childList:true,characterData:true});
-  }
-  document.addEventListener("input",function(){setTimeout(updateDashboard,0)});
-  document.addEventListener("change",function(){setTimeout(updateDashboard,0)});
+  document.addEventListener("precifica:calculated",function(){setTimeout(updateDashboard,0)});
+  document.addEventListener("precifica:catalog-changed",function(){setTimeout(updateDashboard,0)});
 }
 function init(){
   initDashboardButtons();

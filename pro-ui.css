@@ -269,15 +269,15 @@ tbody tr:hover{background:#111d2d!important}
 .footer{color:#526075!important}
 
 /* Keep result section premium, but compatible with new dark shell */
-#workspaceGrid>section:nth-child(8){
+#resultSection{
   border-color:#28384c!important;
   background:linear-gradient(180deg,#0f1a2a,#0a121d)!important;
   box-shadow:0 18px 46px rgba(0,0,0,.22)!important
 }
-#workspaceGrid>section:nth-child(8) .ch{
+#resultSection .ch{
   background:radial-gradient(circle at 86% 0,rgba(255,103,29,.16),transparent 18rem),linear-gradient(135deg,#111e31,#0b1422)!important
 }
-#workspaceGrid>section:nth-child(8) .cb{background:linear-gradient(180deg,#0d1623,#09111c)!important}
+#resultSection .cb{background:linear-gradient(180deg,#0d1623,#09111c)!important}
 
 @media(max-width:1180px){
   .dash-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}

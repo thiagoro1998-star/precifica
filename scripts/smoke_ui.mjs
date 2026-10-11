@@ -6,12 +6,14 @@ const html=fs.readFileSync("index.html","utf8")
   .replace(/<script[^>]*src="\.\/market\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/consignment-math\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/consignment\.js[^"]*"[^>]*><\/script>/,"")
-  .replace(/<script[^>]*src="\.\/ui\.js[^"]*"[^>]*><\/script>/,"")\n  .replace(/<script[^>]*src="\.\/shell\.js[^"]*"[^>]*><\/script>/,"");
+  .replace(/<script[^>]*src="\.\/ui\.js[^"]*"[^>]*><\/script>/,"")
+  .replace(/<script[^>]*src="\.\/shell\.js[^"]*"[^>]*><\/script>/,"");
 const app=fs.readFileSync("app.js","utf8");
 const market=fs.readFileSync("market.js","utf8");
 const consMath=fs.readFileSync("consignment-math.js","utf8");
 const cons=fs.readFileSync("consignment.js","utf8");
-const ui=fs.readFileSync("ui.js","utf8");\nconst shell=fs.readFileSync("shell.js","utf8");
+const ui=fs.readFileSync("ui.js","utf8");
+const shell=fs.readFileSync("shell.js","utf8");
 
 const dom=new JSDOM(html,{runScripts:"outside-only",url:"https://example.test/precifica/"});
 const {window}=dom;

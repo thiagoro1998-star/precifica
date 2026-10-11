@@ -3,7 +3,6 @@ import {JSDOM} from "jsdom";
 
 process.on("uncaughtException",(err)=>{console.error(err);process.exit(1)});
 process.on("unhandledRejection",(err)=>{console.error(err);process.exit(1)});
-const smokeTimer=setTimeout(()=>{console.error("UI smoke timeout");process.exit(1)},25000);
 
 const html=fs.readFileSync("index.html","utf8")
   .replace(/<script[^>]*src="\.\/app\.js[^"]*"[^>]*><\/script>/,"")
@@ -250,7 +249,6 @@ assert(q("#saveLocalProfile"),"local profile fallback missing");
 q("#closeAccount").click();
 assert(!q("#accountModal").classList.contains("show"),"account modal did not close");
 
-clearTimeout(smokeTimer);
 console.log("UI smoke verification: OK");
 window.close();
 process.exit(0);

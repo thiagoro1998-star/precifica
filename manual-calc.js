@@ -26,6 +26,7 @@ function setPending(reason){
   if(status)status.textContent=reason==="dirty"?"Alterações pendentes. Os números abaixo ficam bloqueados até você recalcular.":"Preencha os dados acima e clique em Calcular para liberar os resultados.";
   document.body.dataset.calcConfirmed="false";
   showValidation([]);
+  if(typeof calc==="function")calc();
 }
 function confirmCalculation(){
   try{

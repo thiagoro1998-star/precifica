@@ -20,7 +20,7 @@ jobs:
           node --check market.js
           node --check consignment-math.js
           node --check consignment.js
-          node --check ui.js
+          node --check ui.js\n          node --check shell.js
       - name: Verify deterministic pricing math
         run: |
           python3 scripts/verify_math.py
@@ -40,7 +40,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir -p dist
-          cp index.html style.css app.js market.js consignment-math.js consignment.js ui.js tariffs.json favicon.svg dist/
+          cp index.html style.css pro-ui.css app.js market.js consignment-math.js consignment.js ui.js shell.js tariffs.json favicon.svg dist/
       - name: Refresh ANEEL residential tariff snapshot
         continue-on-error: true
         run: python3 scripts/build_tariffs.py

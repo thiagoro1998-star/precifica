@@ -350,6 +350,17 @@ function calc(){
  var e=erate(),c=costs();$("#kwhUsed").textContent=brl(e.rate)+"/kWh";$("#kwhSource").textContent=e.source;$("#energyCost").textContent=brl(c.projectEnergy);
  var tx=tax();if($("#taxProfile").value.indexOf("simples")===0)$("#simplesRate").value=tx.rate.toFixed(2).replace(".",",")+"%";$("#taxInfo").innerHTML="<b>"+tx.note+"</b><br>Taxa de marketplace é calculada separadamente e não é imposto.";
  var cv=cac();$("#cacHint").textContent=cv?"CAC calculado: "+brl(cv)+" por pedido.":"Sem histórico, CAC = R$ 0.";
+ var confirmed=document.body.dataset.calcConfirmed==="true";
+ if(!confirmed){
+   $("#suggestProfit").textContent=brl(0);
+   $("#scenarioChannel").textContent="Aguardando cálculo";
+   $("#priceChoices").innerHTML='<div class="neutral">Preencha os dados e clique em Calcular.</div>';
+   $("#resCost").textContent=brl(0);$("#resPrice").textContent=brl(0);$("#resReceived").textContent=brl(0);$("#resProfit").textContent=brl(0);$("#resMargin").textContent="0%";$("#resMarkup").textContent="0%";
+   $("#costBreakdown").innerHTML="";$("#feeBreakdown").innerHTML="";$("#compareBody").innerHTML="";
+   $("#auditCalc").innerHTML="<b>Aguardando cálculo.</b> Os valores só serão fechados depois do botão Calcular.";
+   if($("#stickyPrice"))$("#stickyPrice").textContent=brl(0);
+   return;
+ }
  $("#suggestProfit").textContent=brl(suggested());
  var tp=target(),price;
  if(state.priceMode==="margin")price=priceForMargin(num($("#targetMargin").value),state.channel);

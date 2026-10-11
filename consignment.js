@@ -94,6 +94,7 @@ function inputArray(id,key,placeholder){
 
 function useCalculatedCost(){
   try{
+    if(document.body.dataset.calcConfirmed!=="true"){flash("Volte à Precificação e clique em Calcular antes de importar o custo.");return}
     var c=typeof costs==="function"?costs():null;
     if(!c||!Number.isFinite(c.total)||c.total<=0){flash("Preencha a aba Precificação primeiro para importar o custo.");return}
     state.costPerUnit=String(c.total);

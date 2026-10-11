@@ -109,6 +109,7 @@ function clearStoreForm(){
 }
 function importPricingCost(){
   try{
+    if(document.body.dataset.calcConfirmed!=="true"){flash("Volte à Precificação e clique em Calcular antes de importar o custo.");return}
     var c=typeof costs==="function"?costs():null;
     if(!c||!Number.isFinite(c.total)||c.total<=0){flash("Faça um cálculo válido na Precificação antes de importar o custo.");return}
     q("#storeCost").value=c.total.toFixed(2);

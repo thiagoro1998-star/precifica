@@ -92,7 +92,7 @@ function initAuth(){
   profileUI();
 }
 function initObservers(){
-  var target=q("#workspaceGrid");
+  var target=q("#resultSection");
   if(target&&window.MutationObserver){
     new MutationObserver(function(){updateDashboard()}).observe(target,{subtree:true,childList:true,characterData:true});
   }

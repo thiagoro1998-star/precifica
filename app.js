@@ -28,12 +28,15 @@ function clone(x){return JSON.parse(JSON.stringify(x))}
 function load(){try{var x=JSON.parse(localStorage.getItem(KEY));return x?Object.assign(clone(def),x):clone(def)}catch(e){return clone(def)}}
 function save(){localStorage.setItem(KEY,JSON.stringify(presets))}
 var presets=load();
-var state={
- mode:"equal",pieces:[{id:id(),name:"",weight:"",hours:"",minutes:0,qty:1,slicerCost:""}],energyMode:"reference",
- selectedFilament:presets.filaments[0]?presets.filaments[0].id:"",selectedPrinter:presets.printers[0]?presets.printers[0].id:"",
- packaging:[],supplies:[],channel:"direct",priceMode:"suggest",
- channelOpts:{amazonCategory:"Casa",amazonPlan:"individual",magaluPromo:false,magaluItemFee:false,tiktokShipping:false,tiktokAffiliate:0}
-};
+function freshCalcState(){
+ return{
+  mode:"equal",pieces:[{id:id(),name:"",weight:0,hours:0,minutes:0,qty:0,slicerCost:0}],energyMode:"reference",
+  selectedFilament:"",selectedPrinter:"",
+  packaging:[],supplies:[],channel:"direct",priceMode:"suggest",
+  channelOpts:{amazonCategory:"Casa",amazonPlan:"individual",magaluPromo:false,magaluItemFee:false,tiktokShipping:false,tiktokAffiliate:0}
+ };
+}
+var state=freshCalcState();
 var ufs=["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
 // Catálogo de distribuidoras por UF. Quando a UF tem uma única grande concessionária,
 // mantemos uma segunda opção "Outra distribuidora/permissionária" em vez de inventar uma empresa.
@@ -127,7 +130,7 @@ var amazonCats={"Comidas e bebidas":10,"Indústria e Ciência":12,"Brinquedos e 
 var channels=[["direct","Venda direta"],["shopee","Shopee"],["mlclassic","ML Clássico"],["mlpremium","ML Premium"],["amazon","Amazon"],["magalu","Magalu"],["tiktok","TikTok Shop"]];
 
 function options60(v){var s="";for(var i=0;i<60;i++)s+='<option '+(String(v)==String(i)?"selected":"")+'>'+i+"</option>";return s}
-function options100(v){var s="";for(var i=1;i<=100;i++)s+='<option '+(Number(v)==i?"selected":"")+'>'+i+"</option>";return s}
+function options100(v){var s="";for(var i=0;i<=100;i++)s+='<option '+(Number(v)==i?"selected":"")+'>'+i+"</option>";return s}
 function renderPieces(){
  var host=$("#pieces");host.innerHTML="";
  state.pieces.forEach(function(p,i){
@@ -146,14 +149,21 @@ function renderPieces(){
  $$("[data-del]").forEach(function(b){b.onclick=function(){if(state.pieces.length>1){state.pieces=state.pieces.filter(function(x){return x.id!==b.dataset.del});renderPieces();calc()}}});
 }
 function renderSelects(){
- var f=$("#filamentPreset");f.innerHTML=presets.filaments.map(function(x){return '<option value="'+x.id+'">'+x.name+"</option>"}).join("");
- if(!presets.filaments.some(function(x){return x.id===state.selectedFilament}))state.selectedFilament=presets.filaments[0]?presets.filaments[0].id:"";
- f.value=state.selectedFilament;
- var p=$("#printerPreset");p.innerHTML=presets.printers.map(function(x){return '<option value="'+x.id+'">'+x.name+"</option>"}).join("");
- if(!presets.printers.some(function(x){return x.id===state.selectedPrinter}))state.selectedPrinter=presets.printers[0]?presets.printers[0].id:"";
- p.value=state.selectedPrinter;syncPrinter();renderRows("packaging");renderRows("supplies");
+ var f=$("#filamentPreset");
+ f.innerHTML='<option value="">Selecione um filamento</option>'+presets.filaments.map(function(x){return '<option value="'+x.id+'">'+x.name+"</option>"}).join("");
+ if(state.selectedFilament&&!presets.filaments.some(function(x){return x.id===state.selectedFilament}))state.selectedFilament="";
+ f.value=state.selectedFilament||"";
+ var p=$("#printerPreset");
+ p.innerHTML='<option value="">Selecione uma impressora</option>'+presets.printers.map(function(x){return '<option value="'+x.id+'">'+x.name+"</option>"}).join("");
+ if(state.selectedPrinter&&!presets.printers.some(function(x){return x.id===state.selectedPrinter}))state.selectedPrinter="";
+ p.value=state.selectedPrinter||"";
+ syncPrinter();renderRows("packaging");renderRows("supplies");
 }
-function syncPrinter(){var p=presets.printers.find(function(x){return x.id===state.selectedPrinter});if(p){$("#printerWatts").value=p.watts;$("#maintenanceHour").value=p.maintenance}}
+function syncPrinter(){
+ var p=presets.printers.find(function(x){return x.id===state.selectedPrinter});
+ $("#printerWatts").value=p?num(p.watts):0;
+ $("#maintenanceHour").value=p?num(p.maintenance):0;
+}
 function renderRows(kind){
  var arr=state[kind], cat=presets[kind==="packaging"?"packaging":"supplies"], host=$(kind==="packaging"?"#packagingRows":"#supplyRows");host.innerHTML="";
  if(!arr.length)host.innerHTML='<div class="hint" style="margin-bottom:8px">Nenhum item adicionado.</div>';
@@ -267,11 +277,25 @@ function resultAt(price,ch){
  var c=costs(),f=fee(price,ch),tx=tax(),taxv=price*tx.rate/100+tx.fixed,los=price*loss()/100,ad=cac(),profit=price-c.total-f.total-taxv-los-ad;
  return{price:price,c:c,f:f,taxv:taxv,loss:los,ads:ad,profit:profit,received:price-f.total-taxv-los-ad,margin:price?profit/price*100:0,markup:c.total?(price/c.total-1)*100:0}
 }
-function priceFor(target,ch){var lo=0,hi=Math.max(20,costs().total+target+20),i;for(i=0;i<60&&resultAt(hi,ch).profit<target;i++)hi*=1.7;for(i=0;i<80;i++){var mid=(lo+hi)/2;if(resultAt(mid,ch).profit>=target)hi=mid;else lo=mid}return hi}
+function priceFor(target,ch){
+ target=Math.max(0,num(target));
+ var lo=0,hi=Math.max(1,costs().total+target+1),i,MAX_PRICE=10000000;
+ for(i=0;i<80&&resultAt(hi,ch).profit<target;i++){
+   hi*=1.7;
+   if(!Number.isFinite(hi)||hi>MAX_PRICE)throw new Error("Não foi possível encontrar preço viável: revise taxas, impostos e reservas.");
+ }
+ for(i=0;i<100;i++){var mid=(lo+hi)/2;if(resultAt(mid,ch).profit>=target)hi=mid;else lo=mid}
+ if(!Number.isFinite(hi)||hi<0)throw new Error("Preço calculado inválido.");
+ return hi
+}
 function priceForMargin(targetPct,ch){
- var target=Math.max(0,Math.min(95,num(targetPct)))/100,lo=0,hi=Math.max(20,costs().total*3+20),i;
- for(i=0;i<60&&resultAt(hi,ch).margin/100<target;i++)hi*=1.7;
- for(i=0;i<80;i++){var mid=(lo+hi)/2;if(resultAt(mid,ch).margin/100>=target)hi=mid;else lo=mid}
+ var target=Math.max(0,Math.min(95,num(targetPct)))/100,lo=0,hi=Math.max(1,costs().total*3+1),i,MAX_PRICE=10000000;
+ for(i=0;i<80&&resultAt(hi,ch).margin/100<target;i++){
+   hi*=1.7;
+   if(!Number.isFinite(hi)||hi>MAX_PRICE)throw new Error("Margem inviável com as taxas atuais.");
+ }
+ for(i=0;i<100;i++){var mid=(lo+hi)/2;if(resultAt(mid,ch).margin/100>=target)hi=mid;else lo=mid}
+ if(!Number.isFinite(hi)||hi<0)throw new Error("Preço por margem inválido.");
  return hi
 }
 function suggested(){
@@ -282,10 +306,47 @@ function target(){
  if(state.priceMode==="profit")return num($("#targetProfit").value);
  return 0
 }
+function validateCalculation(){
+ var errors=[];
+ var rows=state.mode==="equal"?state.pieces.slice(0,1):state.pieces;
+ if(!rows.length)errors.push("Adicione pelo menos uma peça/fatiamento.");
+ rows.forEach(function(p,idx){
+   var label=p.name||("Peça "+(idx+1)),weight=num(p.weight),hours=num(p.hours)+num(p.minutes)/60,qty=num(p.qty);
+   if(weight<=0)errors.push(label+": informe o peso do fatiador.");
+   if(hours<=0)errors.push(label+": informe o tempo de impressão.");
+   if(qty<=0)errors.push(label+": informe quantos produtos esse fatiamento gera.");
+ });
+ var fil=presets.filaments.find(function(x){return x.id===state.selectedFilament});
+ if(!fil)errors.push("Selecione o filamento.");
+ else{
+   if(num(fil.price)<=0)errors.push("O preço do rolo de filamento precisa ser maior que zero.");
+   if(num(fil.weight)<=0)errors.push("O peso do rolo de filamento precisa ser maior que zero.");
+ }
+ var printer=presets.printers.find(function(x){return x.id===state.selectedPrinter});
+ if(!printer)errors.push("Selecione a impressora.");
+ if(num($("#printerWatts").value)<=0)errors.push("O consumo médio da impressora precisa ser maior que zero.");
+ var e=erate();
+ if(!(e.rate>0))errors.push("Informe um custo de energia válido.");
+ var taxRate=tax().rate,lossRate=loss(),override=$("#overridePct").value===""?null:num($("#overridePct").value);
+ if(taxRate<0||taxRate>=100)errors.push("A alíquota de imposto deve ficar entre 0% e menos de 100%.");
+ if(lossRate<0||lossRate>=100)errors.push("A reserva de perdas deve ficar entre 0% e menos de 100%.");
+ if(override!==null&&(override<0||override>=100))errors.push("A comissão manual deve ficar entre 0% e menos de 100%.");
+ if(state.priceMode==="margin"&&(num($("#targetMargin").value)<=0||num($("#targetMargin").value)>95))errors.push("A margem desejada deve ser maior que 0% e no máximo 95%.");
+ if(state.priceMode==="markup"&&num($("#targetMarkup").value)<0)errors.push("O markup não pode ser negativo.");
+ if(state.priceMode==="profit"&&num($("#targetProfit").value)<0)errors.push("O lucro desejado não pode ser negativo.");
+ if($("#taxProfile").value.indexOf("simples")===0&&num($("#rbt12").value)<=0)errors.push("Informe o RBT12 para calcular o Simples Nacional.");
+ if($("#adsOn").checked&&(num($("#adsSpend").value)<=0||num($("#adsOrders").value)<=0))errors.push("Com Ads/CAC ativado, informe gasto e pedidos atribuídos.");
+ var c=costs();
+ if(!Number.isFinite(c.total)||c.total<0)errors.push("O custo total calculado ficou inválido.");
+ return{ok:errors.length===0,errors:errors,cost:c};
+}
+window.PrecificaPricingEngine={validate:validateCalculation,costs:costs,resultAt:resultAt,priceFor:priceFor,priceForMargin:priceForMargin};
 function line(k,v){return '<div class="line"><span class="muted">'+k+'</span><b>'+brl(v)+"</b></div>"}
 function calc(){
  try{
- var fil=presets.filaments.find(function(x){return x.id===state.selectedFilament});if(fil){$("#filPrice").textContent=brl(fil.price);$("#filWeight").textContent=fil.weight+" g";$("#filCostG").textContent=brl(fil.price/Math.max(1,fil.weight))+"/g";$("#material").value=fil.material||"PLA"}
+ var fil=presets.filaments.find(function(x){return x.id===state.selectedFilament});
+ if(fil){$("#filPrice").textContent=brl(fil.price);$("#filWeight").textContent=fil.weight+" g";$("#filCostG").textContent=brl(fil.price/Math.max(1,fil.weight))+"/g";$("#material").value=fil.material||""}
+ else{$("#filPrice").textContent=brl(0);$("#filWeight").textContent="0 g";$("#filCostG").textContent=brl(0)+"/g";$("#material").value=""}
  var e=erate(),c=costs();$("#kwhUsed").textContent=brl(e.rate)+"/kWh";$("#kwhSource").textContent=e.source;$("#energyCost").textContent=brl(c.projectEnergy);
  var tx=tax();if($("#taxProfile").value.indexOf("simples")===0)$("#simplesRate").value=tx.rate.toFixed(2).replace(".",",")+"%";$("#taxInfo").innerHTML="<b>"+tx.note+"</b><br>Taxa de marketplace é calculada separadamente e não é imposto.";
  var cv=cac();$("#cacHint").textContent=cv?"CAC calculado: "+brl(cv)+" por pedido.":"Sem histórico, CAC = R$ 0.";
@@ -328,12 +389,7 @@ function updateDistributorOptions(){
  sel.innerHTML='<option value="">Selecione sua distribuidora</option>'+list.map(function(x,i){
    return '<option value="'+i+'">'+x.name+(x.manual?" · informar manualmente":"")+"</option>";
  }).join("");
- // Praia Grande: prioriza CPFL Piratininga conforme a distribuidora local mais comum; o usuário pode trocar.
- if(uf==="SP"&&city==="Praia Grande"){
-   var ix=list.findIndex(function(x){return normKey(x.q).indexOf("PIRATINING")>=0});
-   sel.value=String(ix>=0?ix:0);
-   fetchAneelTariff(list[ix>=0?ix:0]);
- } else $("#energyRefHint").textContent="Escolha a distribuidora que aparece na sua conta. A tarifa vem de um snapshot oficial da ANEEL hospedado junto com o site, sem depender de CORS.";
+ $("#energyRefHint").textContent=city?"Escolha a distribuidora que aparece na sua conta. A tarifa vem do snapshot oficial da ANEEL hospedado junto com o site.":"Selecione estado, cidade e distribuidora para carregar a referência.";
  calc()
 }
 async function cities(uf){
@@ -341,11 +397,17 @@ async function cities(uf){
  try{
    var res=await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados/"+uf+"/municipios"),arr=await res.json();
    c.innerHTML='<option value="">Selecione a cidade</option>'+arr.map(function(x){return "<option>"+x.nome+"</option>"}).join("");
-   if(uf==="SP")c.value="Praia Grande";
  }catch(e){c.innerHTML='<option value="">Cidade indisponível</option>'}
  updateDistributorOptions()
 }
-function stateInit(){var s=$("#stateSelect");s.innerHTML=ufs.map(function(x){return "<option>"+x+"</option>"}).join("");s.value="SP";cities("SP")}
+function stateInit(){
+ var s=$("#stateSelect");
+ s.innerHTML='<option value="">Selecione o estado</option>'+ufs.map(function(x){return "<option>"+x+"</option>"}).join("");
+ s.value="";
+ $("#citySelect").innerHTML='<option value="">Selecione o estado primeiro</option>';
+ $("#distributorSelect").innerHTML='<option value="">Selecione a cidade primeiro</option>';
+ $("#energyRefHint").textContent="Selecione estado, cidade e distribuidora. Nenhuma tarifa é assumida automaticamente.";
+}
 
 function editor(kind){
  var key=kind==="filament"?"filaments":kind==="printer"?"printers":kind==="packaging"?"packaging":"supplies",host=$("#"+kind+"Editor"),arr=presets[key];host.innerHTML="";
@@ -368,7 +430,7 @@ function init(){
  document.addEventListener("focusin",function(e){if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))document.body.classList.add("typing")});
  document.addEventListener("focusout",function(){setTimeout(function(){if(!document.activeElement||!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))document.body.classList.remove("typing")},80)});
  $$("[data-mode]").forEach(function(b){b.onclick=function(){state.mode=b.dataset.mode;$$("[data-mode]").forEach(function(x){x.classList.toggle("active",x===b)});if(state.mode==="equal")state.pieces=state.pieces.slice(0,1);renderPieces();calc()}});
- $("#addPiece").onclick=function(){state.pieces.push({id:id(),name:"",weight:"",hours:"",minutes:0,qty:1,slicerCost:""});state.mode="different";$$("[data-mode]").forEach(function(x){x.classList.toggle("active",x.dataset.mode==="different")});renderPieces();calc()};
+ $("#addPiece").onclick=function(){state.pieces.push({id:id(),name:"",weight:0,hours:0,minutes:0,qty:0,slicerCost:0});state.mode="different";$$("[data-mode]").forEach(function(x){x.classList.toggle("active",x.dataset.mode==="different")});renderPieces();calc()};
  $("#filamentPreset").onchange=function(){state.selectedFilament=this.value;calc()};$("#printerPreset").onchange=function(){state.selectedPrinter=this.value;syncPrinter();calc()};
  $("#addPackaging").onclick=function(){addRow("packaging")};$("#addSupply").onclick=function(){addRow("supplies")};
  $$("[data-open]").forEach(function(b){b.onclick=function(){var mid=b.dataset.open,k=mid.indexOf("filament")>=0?"filament":mid.indexOf("printer")>=0?"printer":mid.indexOf("packaging")>=0?"packaging":"supply";editor(k);$("#"+mid).classList.add("open")}});
@@ -383,7 +445,15 @@ function init(){
  $("#taxProfile").onchange=function(){$("#simplesBox").classList.toggle("hidden",this.value.indexOf("simples")!==0);calc()};$("#meiAllocate").onchange=function(){$("#meiOrdersWrap").classList.toggle("hidden",!this.checked);calc()};$("#adsOn").onchange=function(){$("#adsBox").classList.toggle("hidden",!this.checked);calc()};
  $$("[data-price-mode]").forEach(function(b){b.onclick=function(){state.priceMode=b.dataset.priceMode;$$("[data-price-mode]").forEach(function(x){x.classList.toggle("active",x===b)});showMode();calc()}});
  ["material","printerWatts","maintenanceHour","billValue","billKwh","manualKwh","sellerFreight","postCustom","rbt12","manualTaxRate","meiOrders","adsSpend","adsOrders","lossCustom","suggestProfile","targetProfit","targetMargin","targetMarkup","overridePct","overrideFixed"].forEach(function(i){var el=$("#"+i);if(el){el.oninput=calc;if(el.tagName==="SELECT")el.onchange=calc}});
- $("#resetBtn").onclick=function(){state.pieces=[{id:id(),name:"",weight:"",hours:"",minutes:0,qty:1,slicerCost:""}];state.packaging=[];state.supplies=[];$("#projectName").value="";$("#billValue").value="";$("#billKwh").value="";$("#sellerFreight").value=0;renderPieces();renderRows("packaging");renderRows("supplies");calc()};
+ $("#resetBtn").onclick=function(){
+ state=freshCalcState();
+ $("#projectName").value="";
+ ["billValue","billKwh","manualKwh","sellerFreight","postCustom","rbt12","manualTaxRate","meiOrders","adsSpend","adsOrders","lossCustom","targetProfit","targetMargin","targetMarkup","overrideFixed"].forEach(function(id){var el=$("#"+id);if(el)el.value=0});
+ $("#overridePct").value="";
+ $("#failurePreset").value="0";$("#postProcess").value="0";$("#lossReserve").value="0";$("#taxProfile").value="none";
+ $("#adsOn").checked=false;$("#meiAllocate").checked=false;
+ renderPieces();renderSelects();renderMarkets();stateInit();showMode();calc();
+};
  $("#exportBtn").onclick=function(){var blob=new Blob([JSON.stringify(presets,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="precifica3d-presets.json";a.click();URL.revokeObjectURL(a.href)};
  $("#importBtn").onclick=function(){$("#importFile").click()};$("#importFile").onchange=async function(e){try{var x=JSON.parse(await e.target.files[0].text());presets=Object.assign(clone(def),x);save();renderSelects();calc();alert("Presets importados.")}catch(err){alert("Arquivo inválido.")}};
 }

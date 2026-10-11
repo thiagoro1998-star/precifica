@@ -11,6 +11,7 @@
 <meta name="description" content="Calculadora profissional de precificação para impressão 3D">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.10.0">
 <link rel="stylesheet" href="./style.css?v=1.13.0">\n<link rel="stylesheet" href="./pro-ui.css?v=1.13.0">
+<link rel="stylesheet" href="./operations.css?v=1.14.0">
 </head>
 <body>
 <div class="app">
@@ -89,7 +90,7 @@
           <div class="module-grid">
             <button class="module-card orange" data-open-workspace="calc"><span class="module-icon">R$</span><b>Precificação 3D</b><small>Custo real, energia, material, taxas e preço por canal.</small><span class="module-arrow">→</span></button>
             <button class="module-card cyan" data-open-workspace="market"><span class="module-icon">↗</span><b>Radar de Mercado</b><small>Compare suas contas com referências reais que você encontrou.</small><span class="module-arrow">→</span></button>
-            <button class="module-card green" data-open-workspace="consignment"><span class="module-icon">%</span><b>Consignação</b><small>Simule comissão, repasse, atacado e lucro em lojas parceiras.</small><span class="module-arrow">→</span></button>
+            <button class="module-card green" data-open-workspace="consignment"><span class="module-icon">%</span><b>Consignação</b><small>Controle pontos, peças em consignação, recebíveis e simule acordos.</small><span class="module-arrow">→</span></button>
             <button class="module-card purple" data-open-workspace="catalog"><span class="module-icon">▣</span><b>Catálogo</b><small>Guarde snapshots de custo, preço, margem e lucro por produto.</small><span class="module-arrow">→</span></button>
           </div>
         </div>
@@ -197,8 +198,25 @@
       </div>
     </section>
 
+    <section class="calc-commit-card span2" id="calcCommitCard">
+      <div class="calc-commit-copy">
+        <span class="calc-commit-kicker">ETAPA FINAL</span>
+        <h2>Pronto para fechar a conta?</h2>
+        <p id="calcCommitStatus">Preencha os dados acima e clique em Calcular para liberar os resultados.</p>
+      </div>
+      <div class="calc-commit-action">
+        <button class="btn primary calc-main-button" id="calculateNowBtn">Calcular preço e resultados</button>
+        <span>O resultado só é confirmado quando você clicar aqui.</span>
+      </div>
+    </section>
+
     <section class="card span2" id="resultSection">
       <div class="ch"><div class="num">07</div><div><h2>Resultado</h2><div class="muted">Custos, descontos, lucro e comparativo entre canais.</div></div></div>
+      <div class="calc-pending-state">
+        <div class="calc-pending-icon">=</div>
+        <div><b>Resultado aguardando cálculo</b><span>Os números ficam bloqueados enquanto houver alterações não recalculadas.</span></div>
+        <button class="btn primary" type="button" onclick="window.PrecificaManualCalc&&window.PrecificaManualCalc.calculate()">Calcular agora</button>
+      </div>
       <div class="cb">
         <div class="stats"><div class="stat"><div class="k">Custo completo / unidade</div><div class="v" id="resCost">R$ 0,00</div></div><div class="stat a"><div class="k">Preço sugerido</div><div class="v" id="resPrice">R$ 0,00</div></div><div class="stat"><div class="k">Recebimento líquido</div><div class="v" id="resReceived">R$ 0,00</div></div><div class="stat"><div class="k">Lucro líquido</div><div class="v good" id="resProfit">R$ 0,00</div></div><div class="stat"><div class="k">Margem líquida</div><div class="v" id="resMargin">0%</div></div><div class="stat"><div class="k">Markup efetivo</div><div class="v" id="resMarkup">0%</div></div></div>
         <div class="grid" style="margin-top:14px"><div class="box"><h3 class="title">Quebra de custos</h3><div id="costBreakdown"></div></div><div class="box"><h3 class="title">Quebra de descontos</h3><div id="feeBreakdown"></div></div></div>
@@ -230,12 +248,115 @@
       </div>
     </section>
 
-    <section class="card span2" id="consignmentSection">
-      <div class="ch"><div class="num">09</div><div><h2>Consignação e Revenda</h2><div class="muted">Para começar, escolha os valores prontos. Se quiser, depois abra o modo completo.</div></div></div>
+    <section class="card span2 cons-ops-section" id="consignmentSection">
+      <div class="ch"><div class="num">09</div><div><h2>Consignação</h2><div class="muted">Controle pontos, estoque externo, valores a receber, pagamentos e simulações.</div></div></div>
       <div class="cb">
         <div id="consFlash" class="cons-flash"></div>
 
-        <div class="cons-topbar">
+        <div class="cons-area-tabs" role="tablist" aria-label="Áreas de consignação">
+          <button class="cons-area-tab active" data-cons-area="dashboard"><span class="cons-area-icon">▦</span><span><b>Dashboard</b><small>Visão geral</small></span></button>
+          <button class="cons-area-tab" data-cons-area="stores"><span class="cons-area-icon">⌂</span><span><b>Lojas e pontos</b><small>Estoque e acertos</small></span></button>
+          <button class="cons-area-tab" data-cons-area="simulator"><span class="cons-area-icon">%</span><span><b>Simulador</b><small>Consignação e atacado</small></span></button>
+        </div>
+
+        <div class="cons-area-panel" data-cons-area-panel="dashboard">
+          <div class="cons-ops-hero">
+            <div><span class="cons-eyebrow">OPERAÇÃO</span><h3>O que está fora da sua bancada agora</h3><p>Veja quantas peças estão em lojas, quanto precisa receber e quais pontos já acertaram.</p></div>
+            <button class="btn primary" data-cons-area="stores" type="button">+ Novo ponto</button>
+          </div>
+
+          <div class="cons-dashboard-kpis">
+            <div class="cons-dashboard-kpi"><span>Pontos ativos</span><b id="consDashPoints">0</b><small>Lojas com consignação aberta</small></div>
+            <div class="cons-dashboard-kpi"><span>Peças em exposição</span><b id="consDashPieces">0</b><small>Estoque que está fora com parceiros</small></div>
+            <div class="cons-dashboard-kpi attention"><span>Valor a receber</span><b id="consDashDue">R$ 0,00</b><small id="consDashOwing">0</small><em> ponto(s) devendo</em></div>
+            <div class="cons-dashboard-kpi good"><span>Já recebido</span><b id="consDashReceived">R$ 0,00</b><small id="consDashPaid">0</small><em> ponto(s) quitados</em></div>
+          </div>
+
+          <div class="cons-receivable-alert" id="consReceivableAlert">Cadastre seus pontos para o painel começar a acompanhar recebíveis.</div>
+
+          <div class="box cons-dashboard-table">
+            <div class="cons-panel-head"><div><h3 class="title">Resumo por ponto</h3><div class="hint">Estoque atual, vendas e situação financeira de cada parceiro.</div></div><button class="btn" data-cons-area="stores" type="button">Gerenciar pontos</button></div>
+            <div class="table"><table><thead><tr><th>Ponto</th><th>Em exposição</th><th>Vendidas</th><th>Repasse gerado</th><th>A receber</th><th>Recebido</th><th>Status</th><th></th></tr></thead><tbody id="consStoresSummary"></tbody></table></div>
+          </div>
+        </div>
+
+        <div class="cons-area-panel hidden" data-cons-area-panel="stores">
+          <div class="cons-panel-head cons-stores-title"><div><span class="cons-eyebrow">PONTOS DE VENDA</span><h3 class="title">Lojas e parceiros</h3><div class="hint">Cadastre onde suas peças foram deixadas e depois registre vendas, pagamentos, devoluções e reposições.</div></div></div>
+
+          <div class="cons-store-layout">
+            <div class="box cons-store-form">
+              <div class="cons-panel-head"><div><h3 class="title">Adicionar novo ponto</h3><div class="hint">Os campos abaixo criam o controle inicial desta consignação.</div></div></div>
+              <div class="row">
+                <div class="f s6"><label>Nome do ponto / loja</label><input class="input" id="storeName" placeholder="Ex.: Loja Centro"></div>
+                <div class="f s6"><label>Endereço</label><input class="input" id="storeAddress" placeholder="Rua, número, bairro, cidade"></div>
+                <div class="f s6"><label>Produto / referência</label><input class="input" id="storeProduct" placeholder="Ex.: Chaveiro articulado"></div>
+                <div class="f s3"><label>Peças deixadas</label><input class="input" id="storeQty" type="number" min="1" step="1" placeholder="20"></div>
+                <div class="f s3"><label>Preço ao público</label><input class="input" id="storePrice" type="number" min="0" step="0.01" placeholder="9,90"></div>
+                <div class="f s3"><label>Comissão da loja (%)</label><input class="input" id="storeCommission" type="number" min="0" max="99" step="0.1" placeholder="30"></div>
+                <div class="f s3"><label>Acerto</label><select id="storeSettlement"><option value="semanal">Semanal</option><option value="quinzenal" selected>Quinzenal</option><option value="mensal">Mensal</option><option value="sob demanda">Sob demanda</option></select></div>
+                <div class="f s6"><label>Custo da peça (opcional)</label><div class="cons-inline-field"><input class="input" id="storeCost" type="number" min="0" step="0.01" placeholder="0,00"><button class="btn" id="importStoreCost" type="button">Usar custo da Precificação</button></div></div>
+              </div>
+              <button class="btn primary cons-add-store" id="addConsStore" type="button">+ Adicionar ponto de consignação</button>
+            </div>
+
+            <div class="cons-store-list-wrap">
+              <div class="cons-panel-head"><div><h3 class="title">Pontos cadastrados</h3><div class="hint">Clique em Gerenciar para abrir o controle daquele parceiro.</div></div></div>
+              <div class="cons-store-cards" id="consStoreCards"></div>
+            </div>
+          </div>
+
+          <div class="cons-store-detail-empty" id="consStoreDetailEmpty">
+            <b>Selecione um ponto para gerenciar</b><span>Depois de cadastrar uma loja, você poderá registrar vendas, recebimentos, devoluções e reposições por botão.</span>
+          </div>
+
+          <div class="cons-store-detail hidden" id="consStoreDetail">
+            <div class="cons-store-detail-head">
+              <div><span class="cons-eyebrow">PONTO SELECIONADO</span><h3 id="detailStoreName">—</h3><p><span id="detailStoreAddress">—</span> · <span id="detailStoreProduct">—</span></p></div>
+              <span class="cons-status active" id="detailStoreStatus">Ativo</span>
+            </div>
+
+            <div class="cons-detail-kpis">
+              <div><span>Em exposição</span><b id="detailStock">0 un.</b></div>
+              <div><span>Vendidas</span><b id="detailSold">0 un.</b></div>
+              <div class="attention"><span>A receber</span><b id="detailDue">R$ 0,00</b></div>
+              <div class="good"><span>Recebido</span><b id="detailPaid">R$ 0,00</b></div>
+            </div>
+
+            <div class="cons-finance-line">
+              <div><span>Venda bruta registrada</span><b id="detailGross">R$ 0,00</b></div>
+              <div><span>Parte da loja</span><b id="detailStoreShare">R$ 0,00</b></div>
+              <div><span>Seu repasse gerado</span><b id="detailProducerShare">R$ 0,00</b></div>
+              <div><span>Condições</span><b id="detailTerms">—</b></div>
+            </div>
+
+            <div class="cons-movement-grid">
+              <div class="cons-action-card"><span>VENDA</span><label>Quantas peças venderam?</label><input class="input" id="movementSaleQty" type="number" min="1" step="1" placeholder="1"><button class="btn primary" id="registerStoreSale" type="button">Registrar venda</button></div>
+              <div class="cons-action-card"><span>PAGAMENTO</span><label>Quanto você recebeu?</label><input class="input" id="movementPayment" type="number" min="0" step="0.01" placeholder="0,00"><button class="btn primary" id="registerStorePayment" type="button">Registrar pagamento</button></div>
+              <div class="cons-action-card"><span>DEVOLUÇÃO</span><label>Quantas peças voltaram?</label><input class="input" id="movementReturnQty" type="number" min="1" step="1" placeholder="1"><button class="btn" id="registerStoreReturn" type="button">Registrar devolução</button></div>
+              <div class="cons-action-card"><span>REPOSIÇÃO</span><label>Quantas peças vai adicionar?</label><input class="input" id="movementRestockQty" type="number" min="1" step="1" placeholder="10"><button class="btn" id="registerStoreRestock" type="button">Adicionar peças</button></div>
+            </div>
+
+            <div class="cons-detail-columns">
+              <div class="box">
+                <div class="cons-panel-head"><div><h3 class="title">Condições do ponto</h3><div class="hint">Alterar preço/comissão recalcula o valor devido sobre as vendas já registradas.</div></div></div>
+                <div class="row">
+                  <div class="f s4"><label>Preço ao público</label><input class="input" id="editStorePrice" type="number" min="0" step="0.01"></div>
+                  <div class="f s4"><label>Comissão (%)</label><input class="input" id="editStoreCommission" type="number" min="0" max="99" step="0.1"></div>
+                  <div class="f s4"><label>Endereço</label><input class="input" id="editStoreAddress"></div>
+                </div>
+                <div class="inline" style="margin-top:10px"><button class="btn" id="saveStoreTerms" type="button">Salvar alterações</button><button class="btn primary" id="settleStore" type="button">Marcar saldo como pago</button><button class="btn" id="archiveStore" type="button">Encerrar ponto</button></div>
+              </div>
+              <div class="box">
+                <div class="cons-panel-head"><div><h3 class="title">Últimas movimentações</h3><div class="hint">Registro local para você conferir o que foi lançado.</div></div></div>
+                <div id="storeMovementList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cons-area-panel hidden cons-simulator-panel" data-cons-area-panel="simulator" id="consSimulatorPanel">
+          <div class="cons-simulator-intro"><div><span class="cons-eyebrow">SIMULADOR</span><h3>Teste uma condição antes de fechar com a loja</h3><p>Escolha os valores, depois clique em Calcular simulação. Os resultados somem sempre que houver uma alteração pendente.</p></div></div>
+<div class="cons-topbar">
           <div>
             <div class="cons-label">TIPO DE VENDA</div>
             <div class="pills">
@@ -261,6 +382,11 @@
         <div class="box cons-cost-import">
           <div><label>Custo completo por unidade</label><input class="input" id="consCost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Ex.: 1,50"><div class="hint" id="consCostOrigin">Valor manual</div></div>
           <div><label>&nbsp;</label><button class="btn primary" id="useCalculatedCost">Usar custo calculado</button><div class="hint">Importa o custo unitário da aba Precificação e continua editável.</div></div>
+        </div>
+
+        <div class="cons-sim-calcbar">
+          <div><b>Confirme a simulação</b><span id="consSimStatus">Preencha as condições e clique em Calcular simulação.</span></div>
+          <button class="btn primary" id="consCalculateNow">Calcular simulação</button>
         </div>
 
         <div id="consignmentMode">
@@ -425,6 +551,7 @@
         </div>
 
         <div class="box cons-full-only" style="margin-top:12px"><h3 class="title">Cenários salvos</h3><div id="consSaved"></div></div>
+        </div>
       </div>
     </section>
 
@@ -440,7 +567,7 @@
     </main>
   </div>
   
-  <div class="footer">Precifica 3D · motor 1.13.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+  <div class="footer">Precifica 3D · motor 1.14.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
 </div>
 
 <div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>
@@ -510,10 +637,12 @@
 </div>
 <div class="shell-toast" id="shellToast"></div>
 
-<script src="./app.js?v=1.13.0"></script>
-<script src="./market.js?v=1.13.0"></script>
-<script src="./consignment-math.js?v=1.13.0"></script>
-<script src="./consignment.js?v=1.13.0"></script>
-<script src="./ui.js?v=1.13.0"></script>
-<script src="./shell.js?v=1.13.0"></script>
+<script src="./app.js?v=1.14.0"></script>
+<script src="./market.js?v=1.14.0"></script>
+<script src="./consignment-math.js?v=1.14.0"></script>
+<script src="./consignment.js?v=1.14.0"></script>
+<script src="./consignment-ops.js?v=1.14.0"></script>
+<script src="./ui.js?v=1.14.0"></script>
+<script src="./manual-calc.js?v=1.14.0"></script>
+<script src="./shell.js?v=1.14.0"></script>
 </body></html>

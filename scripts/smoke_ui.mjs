@@ -52,7 +52,8 @@ window.eval(cons);
 window.eval(consOps);
 window.eval(ui);
 window.eval(manualCalc);
-window.eval(shell);\nconsole.log("SMOKE: modules evaluated");
+window.eval(shell);
+console.log("SMOKE: modules evaluated");
 await new Promise(r=>setTimeout(r,100));
 
 const q=(s)=>window.document.querySelector(s);

@@ -47,7 +47,7 @@ function activate(view,opts){
 function init(){
   assignViews();
   var saved="home";
-  try{saved=localStorage.getItem(KEY)||"calc"}catch(e){}
+  try{saved=localStorage.getItem(KEY)||"home"}catch(e){}
   if(VALID.indexOf(saved)<0)saved="calc";
   document.querySelectorAll("[data-workspace-tab]").forEach(function(btn){
     btn.addEventListener("click",function(){activate(btn.dataset.workspaceTab)});

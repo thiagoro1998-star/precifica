@@ -31,8 +31,10 @@ function metrics(s){
   var price=Math.max(0,n(s.salePrice)),comm=Math.max(0,Math.min(99.99,n(s.commissionPct)))/100;
   var gross=sold*price,storeShare=gross*comm,producer=gross-storeShare;
   var paid=Math.max(0,n(s.paidAmount)),due=Math.max(0,producer-paid);
-  var cost=Math.max(0,n(s.costPerUnit)),profitReceived=paid-(Math.min(sold,paid>0?sold:0)*cost);
-  return{delivered:delivered,sold:sold,returned:returned,stock:stock,price:price,commission:comm,gross:gross,storeShare:storeShare,producer:producer,paid:paid,due:due,cost:cost,profitReceived:profitReceived};
+  var cost=Math.max(0,n(s.costPerUnit)),hasCost=cost>0;
+  var unitRepasse=price*(1-comm),unitProfit=hasCost?unitRepasse-cost:0,unitMargin=hasCost&&unitRepasse>0?unitProfit/unitRepasse*100:null;
+  var realizedCost=sold*cost,projectedProfit=hasCost?producer-realizedCost:null;
+  return{delivered:delivered,sold:sold,returned:returned,stock:stock,price:price,commission:comm,gross:gross,storeShare:storeShare,producer:producer,paid:paid,due:due,cost:cost,hasCost:hasCost,unitRepasse:unitRepasse,unitProfit:unitProfit,unitMargin:unitMargin,projectedProfit:projectedProfit};
 }
 function totals(){
   return stores.reduce(function(a,s){
@@ -64,13 +66,13 @@ function movement(s,type,data){
   s.updatedAt=now();
 }
 function setArea(area){
-  ["dashboard","stores","simulator"].forEach(function(x){
+  ["dashboard","new","manage","simulator"].forEach(function(x){
     qa('[data-cons-area="'+x+'"]').forEach(function(b){b.classList.toggle("active",x===area)});
     qa('[data-cons-area-panel="'+x+'"]').forEach(function(p){p.classList.toggle("hidden",x!==area)});
   });
   try{localStorage.setItem(AREA_KEY,area)}catch(e){}
   if(area==="dashboard")renderDashboard();
-  if(area==="stores")renderStores();
+  if(area==="manage")renderStores();
 }
 function renderDashboard(){
   var t=totals();
@@ -83,19 +85,20 @@ function renderDashboard(){
   var body=q("#consStoresSummary");if(!body)return;
   var active=stores.filter(function(s){return !s.archived});
   if(!active.length){
-    body.innerHTML='<tr><td colspan="8"><div class="cons-empty-state"><b>Nenhum ponto cadastrado</b><span>Adicione sua primeira loja/ponto para começar a controlar estoque e recebimentos.</span><button class="btn primary" data-go-cons-stores>Adicionar primeiro ponto</button></div></td></tr>';
+    body.innerHTML='<tr><td colspan="9"><div class="cons-empty-state"><b>Nenhum ponto cadastrado</b><span>Adicione sua primeira loja/ponto para começar a controlar estoque e recebimentos.</span><button class="btn primary" data-go-cons-stores>Adicionar primeiro ponto</button></div></td></tr>';
   }else{
     body.innerHTML=active.map(function(s){
       var m=metrics(s),st=status(m);
       return '<tr><td><b>'+esc(s.name)+'</b><small class="table-sub">'+esc(s.address||"Sem endereço")+'</small></td>'+
         '<td>'+m.stock+' un.</td><td>'+m.sold+' un.</td><td>'+brl(m.producer)+'</td>'+
+        '<td>'+(m.unitMargin===null?"—":m.unitMargin.toFixed(1).replace(".",",")+"%")+'</td>'+
         '<td class="'+(m.due>.009?"warn":"good")+'"><b>'+brl(m.due)+'</b></td>'+
         '<td>'+brl(m.paid)+'</td><td><span class="cons-status '+st[1]+'">'+st[0]+'</span></td>'+
         '<td><button class="btn cons-mini-action" data-manage-store="'+s.id+'">Gerenciar</button></td></tr>';
     }).join("");
   }
-  qa("[data-go-cons-stores]").forEach(function(b){b.onclick=function(){setArea("stores");setTimeout(function(){q("#storeName")?.focus()},0)}});
-  qa("[data-manage-store]").forEach(function(b){b.onclick=function(){selectedId=b.dataset.manageStore;setArea("stores");renderStoreDetail()}});
+  qa("[data-go-cons-stores]").forEach(function(b){b.onclick=function(){setArea("new");setTimeout(function(){q("#storeName")?.focus()},0)}});
+  qa("[data-manage-store]").forEach(function(b){b.onclick=function(){selectedId=b.dataset.manageStore;setArea("manage");renderStoreDetail()}});
   var alert=q("#consReceivableAlert");
   if(alert){
     if(t.owing>0)alert.innerHTML='<b>'+t.owing+' ponto(s) com valor a receber.</b> Total pendente: <strong>'+brl(t.due)+'</strong>.';
@@ -104,25 +107,48 @@ function renderDashboard(){
   }
 }
 function clearStoreForm(){
-  ["#storeName","#storeAddress","#storeProduct","#storeQty","#storePrice","#storeCommission","#storeCost"].forEach(function(sel){var el=q(sel);if(el)el.value=""});
-  if(q("#storeSettlement"))q("#storeSettlement").value="quinzenal";
+  ["#storeName","#storeAddress","#storeProduct"].forEach(function(sel){var el=q(sel);if(el)el.value=""});
+  ["#storeQty","#storePrice","#storeCommission","#storeCost"].forEach(function(sel){var el=q(sel);if(el)el.value="0"});
+  if(q("#storeSettlement"))q("#storeSettlement").value="";
+  resetStorePreview();
+}
+function resetStorePreview(){
+  var box=q("#storeMarginPreview");if(box)box.classList.add("pending");
+  if(q("#storePreviewRepasse"))q("#storePreviewRepasse").textContent=brl(0);
+  if(q("#storePreviewProfit"))q("#storePreviewProfit").textContent=brl(0);
+  if(q("#storePreviewMargin"))q("#storePreviewMargin").textContent="0%";
+  if(q("#storePreviewStatus"))q("#storePreviewStatus").textContent="Preencha os dados e clique em Calcular condição.";
+}
+function previewStoreTerms(){
+  var price=n(q("#storePrice").value),commission=n(q("#storeCommission").value),cost=n(q("#storeCost").value);
+  var box=q("#storeMarginPreview");
+  if(price<=0){flash("Informe o preço ao público para calcular a condição.");return}
+  if(commission<0||commission>=100){flash("Revise a comissão da loja.");return}
+  var repasse=price*(1-commission/100),profit=cost>0?repasse-cost:0,margin=cost>0&&repasse>0?profit/repasse*100:null;
+  q("#storePreviewRepasse").textContent=brl(repasse);
+  q("#storePreviewProfit").textContent=cost>0?brl(profit):"—";
+  q("#storePreviewMargin").textContent=margin===null?"—":margin.toFixed(1).replace(".",",")+"%";
+  q("#storePreviewStatus").textContent=cost>0?"Condição calculada. A margem é lucro estimado ÷ seu repasse líquido.":"Repasse calculado. Informe o custo da peça para calcular lucro e margem.";
+  if(box)box.classList.remove("pending");
 }
 function importPricingCost(){
   try{
     if(document.body.dataset.calcConfirmed!=="true"){flash("Volte à Precificação e clique em Calcular antes de importar o custo.");return}
     var c=typeof costs==="function"?costs():null;
     if(!c||!Number.isFinite(c.total)||c.total<=0){flash("Faça um cálculo válido na Precificação antes de importar o custo.");return}
-    q("#storeCost").value=c.total.toFixed(2);
-    flash("Custo atual importado: "+brl(c.total)+".");
+    q("#storeCost").value=c.total.toFixed(2);resetStorePreview();
+    flash("Custo atual importado: "+brl(c.total)+". Agora clique em Calcular condição.");
   }catch(e){flash("Não foi possível importar o custo agora.")}
 }
 function addStore(){
   var name=(q("#storeName").value||"").trim(),address=(q("#storeAddress").value||"").trim();
   var qty=i(q("#storeQty").value),price=n(q("#storePrice").value),commission=n(q("#storeCommission").value);
   if(!name){flash("Informe o nome do ponto/loja.");q("#storeName").focus();return}
+  if(!address){flash("Informe o endereço do ponto.");q("#storeAddress").focus();return}
   if(qty<=0){flash("Informe quantas peças foram deixadas.");q("#storeQty").focus();return}
   if(price<=0){flash("Informe o preço ao público.");q("#storePrice").focus();return}
   if(commission<0||commission>=100){flash("Revise a comissão da loja.");q("#storeCommission").focus();return}
+  if(!q("#storeSettlement").value){flash("Selecione a periodicidade do acerto.");q("#storeSettlement").focus();return}
   var s={
     id:id(),name:name,address:address,product:(q("#storeProduct").value||"").trim(),
     deliveredQty:qty,soldQty:0,returnedQty:0,salePrice:price,commissionPct:commission,
@@ -130,7 +156,7 @@ function addStore(){
     createdAt:now(),updatedAt:now(),archived:false,movements:[]
   };
   movement(s,"created",{qty:qty,note:"Ponto cadastrado"});
-  stores.unshift(s);persist();selectedId=s.id;clearStoreForm();renderAll();renderStoreDetail();
+  stores.unshift(s);persist();selectedId=s.id;clearStoreForm();renderAll();setArea("manage");renderStoreDetail();
   flash("Ponto adicionado com "+qty+" peça(s) em consignação.");
 }
 function renderStores(){
@@ -143,7 +169,7 @@ function renderStores(){
       var m=metrics(s),st=status(m);
       return '<article class="cons-store-card '+(selectedId===s.id?"selected":"")+'">'+
         '<div class="cons-store-card-head"><div><b>'+esc(s.name)+'</b><span>'+esc(s.address||"Sem endereço")+'</span></div><span class="cons-status '+st[1]+'">'+st[0]+'</span></div>'+
-        '<div class="cons-store-metrics"><div><span>Em exposição</span><b>'+m.stock+'</b></div><div><span>Vendidas</span><b>'+m.sold+'</b></div><div><span>A receber</span><b>'+brl(m.due)+'</b></div></div>'+
+        '<div class="cons-store-metrics"><div><span>Em exposição</span><b>'+m.stock+'</b></div><div><span>A receber</span><b>'+brl(m.due)+'</b></div><div><span>Sua margem</span><b>'+(m.unitMargin===null?"—":m.unitMargin.toFixed(1).replace(".",",")+"%")+'</b></div></div>'+
         '<button class="btn '+(selectedId===s.id?"primary":"")+'" data-manage-store="'+s.id+'">'+(selectedId===s.id?"Gerenciando":"Gerenciar ponto")+'</button>'+
       '</article>';
     }).join("");
@@ -180,6 +206,7 @@ function renderStoreDetail(){
   q("#detailGross").textContent=brl(m.gross);
   q("#detailStoreShare").textContent=brl(m.storeShare);
   q("#detailProducerShare").textContent=brl(m.producer);
+  q("#detailUnitMargin").textContent=m.unitMargin===null?"—":m.unitMargin.toFixed(1).replace(".",",")+"%";
   q("#detailTerms").textContent=brl(m.price)+" ao público · "+(m.commission*100).toFixed(1).replace(".",",")+"% loja · acerto "+esc(s.settlement||"não definido");
   q("#editStorePrice").value=s.salePrice||"";
   q("#editStoreCommission").value=s.commissionPct||"";
@@ -262,6 +289,7 @@ function init(){
   load();
   qa("[data-cons-area]").forEach(function(b){b.onclick=function(){setArea(b.dataset.consArea)}});
   q("#addConsStore").onclick=addStore;
+  q("#previewStoreTerms").onclick=previewStoreTerms;
   q("#importStoreCost").onclick=importPricingCost;
   q("#registerStoreSale").onclick=registerSale;
   q("#registerStorePayment").onclick=registerPayment;
@@ -270,9 +298,14 @@ function init(){
   q("#settleStore").onclick=settleStore;
   q("#saveStoreTerms").onclick=saveStoreTerms;
   q("#archiveStore").onclick=archiveStore;
+  ["#storeName","#storeAddress","#storeProduct","#storeQty","#storePrice","#storeCommission","#storeCost","#storeSettlement"].forEach(function(sel){
+    var el=q(sel);if(!el)return;
+    el.addEventListener("input",resetStorePreview);el.addEventListener("change",resetStorePreview);
+  });
+  resetStorePreview();
   initSimulatorGate();
   var area="dashboard";try{area=localStorage.getItem(AREA_KEY)||"dashboard"}catch(e){}
-  if(["dashboard","stores","simulator"].indexOf(area)<0)area="dashboard";
+  if(["dashboard","new","manage","simulator"].indexOf(area)<0)area="dashboard";
   setArea(area);renderAll();
 }
 window.PrecificaConsignmentOps={render:renderAll,setArea:setArea,calculateSimulator:calculateSimulator};

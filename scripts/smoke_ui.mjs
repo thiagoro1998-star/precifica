@@ -80,32 +80,53 @@ assert(!q("#consignmentSection").classList.contains("workspace-hidden"),"consign
 window.PrecificaUI.activate("calc",{scroll:false});
 
 console.log("SMOKE: navigation ok");
-// Basic UI smoke: calculators must populate instead of staying blank.
+// Zero-state contract: no calculation data may be assumed on startup.
 assert(q("#priceChoices"),"priceChoices missing");
 assert(q("#compareBody"),"compareBody missing");
 assert(q("#auditCalc"),"auditCalc missing");
-assert(!q("#auditCalc").textContent.includes("Erro interno"),"calculation threw during startup");
-assert(q("#priceChoices").children.length===5,"expected 5 quick price scenarios");
-assert(q("#compareBody").children.length===7,"expected 7 marketplace comparison rows");
+assert(q("#filamentPreset").value==="","filament must start unselected");
+assert(q("#printerPreset").value==="","printer must start unselected");
+assert(q("#stateSelect").value==="","state must start unselected");
+assert(q('[data-p="weight"]').value==="0","weight must start at zero");
+assert(q('[data-p="hours"]').value==="0","hours must start at zero");
+assert(q('[data-p="qty"]').value==="0","output quantity must start at zero");
+assert(q("#targetProfit").value==="0","profit target must start at zero");
+assert(q("#targetMargin").value==="0","margin target must start at zero");
+assert(q("#targetMarkup").value==="0","markup target must start at zero");
+assert(q("#resCost").textContent.includes("0,00"),"result cost must start zero");
+assert(q("#resPrice").textContent.includes("0,00"),"result price must start zero");
+assert(q("#compareBody").children.length===0,"market comparison must not calculate before confirmation");
+assert(window.document.body.dataset.calcConfirmed==="false","startup must be unconfirmed");
 
-console.log("SMOKE: basic calc startup ok");
-// Energy auto reference must become non-zero for Praia Grande -> CPFL Piratininga.
-assert(window.state.energyMode==="reference","reference energy must be default");
-assert(Number((q("#distributorSelect").selectedOptions[0]?.dataset.rate)||0)>0,"ANEEL tariff was not loaded");
-assert(!q("#kwhUsed").textContent.includes("0,00"),"energy rate remained zero");
+// Clicking Calculate with missing mandatory inputs must be blocked with explicit validation.
+q("#calculateNowBtn").click();
+await new Promise(r=>setTimeout(r,10));
+assert(window.document.body.dataset.calcConfirmed==="false","invalid zero-state calculation should not confirm");
+assert(!q("#calcValidationErrors").classList.contains("hidden"),"missing-input validation was not shown");
+
+// Feed explicit production inputs. Nothing is assumed automatically.
+q("#filamentPreset").value="pla65";q("#filamentPreset").dispatchEvent(new window.Event("change",{bubbles:true}));
+q("#printerPreset").value="a1";q("#printerPreset").dispatchEvent(new window.Event("change",{bubbles:true}));
+q("#stateSelect").value="SP";q("#stateSelect").dispatchEvent(new window.Event("change",{bubbles:true}));
+await new Promise(r=>setTimeout(r,20));
+q("#citySelect").value="Praia Grande";q("#citySelect").dispatchEvent(new window.Event("change",{bubbles:true}));
+q("#distributorSelect").value="0";q("#distributorSelect").dispatchEvent(new window.Event("change",{bubbles:true}));
+await new Promise(r=>setTimeout(r,20));
+assert(Number((q("#distributorSelect").selectedOptions[0]?.dataset.rate)||0)>0,"explicit ANEEL tariff selection did not load");
 assert(q("#kwhSource").textContent.includes("ANEEL"),"energy source not marked as ANEEL");
 
-console.log("SMOKE: energy ok");
-// Feed a real composite-product-like input and ensure all dashboards remain populated.
 const weight=q('[data-p="weight"]');
 const hours=q('[data-p="hours"]');
 const minutes=q('[data-p="minutes"]');
+const qty=q('[data-p="qty"]');
 weight.value="56.83"; weight.dispatchEvent(new window.Event("input",{bubbles:true}));
 hours.value="3"; hours.dispatchEvent(new window.Event("input",{bubbles:true}));
 minutes.value="49"; minutes.dispatchEvent(new window.Event("input",{bubbles:true}));
+qty.value="1"; qty.dispatchEvent(new window.Event("input",{bubbles:true}));
 await new Promise(r=>setTimeout(r,20));
 
 assert(q("#resultSection").classList.contains("calc-result-pending"),"results should stay blocked until Calculate is clicked");
+assert(q("#compareBody").children.length===0,"editing inputs must not expose marketplace results");
 assert(window.document.body.dataset.calcConfirmed==="false","calculation should not be confirmed automatically");
 q("#calculateNowBtn").click();
 await new Promise(r=>setTimeout(r,20));
@@ -115,6 +136,7 @@ assert(!q("#resCost").textContent.includes("R$ 0,00"),"cost stayed zero after co
 assert(q("#costBreakdown").children.length>=7,"cost breakdown not rendered");
 assert(q("#feeBreakdown").children.length>=6,"fee breakdown not rendered");
 assert(q("#compareBody").children.length===7,"marketplace dashboard disappeared after calculation");
+assert(q("#priceChoices").children.length===5,"quick scenarios must appear only after confirmed calculation");
 const confirmedCost=q("#resCost").textContent;
 weight.value="70";weight.dispatchEvent(new window.Event("input",{bubbles:true}));
 await new Promise(r=>setTimeout(r,10));
@@ -128,10 +150,9 @@ console.log("SMOKE: manual calc flow ok");
 const shopee=qa("[data-ch]").find(x=>x.dataset.ch==="shopee");
 shopee.click();
 await new Promise(r=>setTimeout(r,10));
-assert(q("#priceChoices").children.length===5,"quick scenarios disappeared on Shopee");
-assert(q("#compareBody").children.length===7,"comparison rows disappeared on Shopee");
-assert(!q("#auditCalc").textContent.includes("Erro interno"),"calculation error after Shopee selection");
 assert(q("#resultSection").classList.contains("calc-result-pending"),"channel change should require recalculation");
+assert(q("#compareBody").children.length===0,"channel change should hide stale comparison until recalculation");
+assert(!q("#auditCalc").textContent.includes("Erro interno"),"calculation error after Shopee selection");
 q("#calculateNowBtn").click();
 await new Promise(r=>setTimeout(r,20));
 assert(window.document.body.dataset.calcConfirmed==="true","recalculation after channel change was not confirmed");
@@ -140,9 +161,15 @@ console.log("SMOKE: channel recalc ok");
 // Consignação: operations dashboard, stores and simulator.
 window.PrecificaUI.activate("consignment",{scroll:false});
 assert(q("#consDashPoints"),"consignment operations dashboard missing");
-assert(qa("[data-cons-area]").length>=3,"consignment area tabs missing");
+assert(qa(".cons-area-tab").length===4,"expected four dedicated consignment tabs");
 assert(!q('[data-cons-area-panel="dashboard"]').classList.contains("hidden"),"consignment dashboard should open first");
+assert(q("#storeQty").value==="0","new point quantity must start zero");
+assert(q("#storePrice").value==="0","new point price must start zero");
+assert(q("#storeCommission").value==="0","new point commission must start zero");
 window.PrecificaConsignmentOps.setArea("simulator");
+assert(q("#consCost").value==="0","consignment simulator cost must start zero");
+assert(q("#consSalePrice").value==="0","consignment simulator sale price must start zero");
+assert(q("#consCommission").value==="0","consignment simulator commission must start zero");
 assert(!q(".cons-simple-only").classList.contains("hidden"),"simple consignation mode should be visible in simulator");
 assert(qa("[data-cons-ui]").length===2,"simple/full selector missing");
 assert(qa('.quick-chip[data-quick-key="salePrice"]').length===4,"quick price options missing");
@@ -181,18 +208,26 @@ assert(!q("#consResults").classList.contains("hidden"),"full detailed results di
 assert(q("#consResults").textContent.includes("R$ 4,03")||q("#consResults").textContent.includes("R$ 4,03"),"detailed producer profit missing");
 assert(q("#consScenarioBody").children.length===16,"scenario simulator should have 16 rows");
 
-// Store ledger: add point, register sale, partial payment and settle.
-window.PrecificaConsignmentOps.setArea("stores");
+// Store ledger: create point, calculate its margin, then manage sales and receivables.
+window.PrecificaConsignmentOps.setArea("new");
 q("#storeName").value="Loja Teste";
-q("#storeAddress").value="Centro";
+q("#storeAddress").value="Rua Centro, 100";
 q("#storeProduct").value="Chaveiro";
 q("#storeQty").value="10";
 q("#storePrice").value="10";
 q("#storeCommission").value="30";
+q("#storeCost").value="2";
+q("#storeSettlement").value="quinzenal";
+q("#previewStoreTerms").click();
+assert(q("#storePreviewRepasse").textContent.includes("7,00"),"store unit payout preview wrong");
+assert(q("#storePreviewProfit").textContent.includes("5,00"),"store unit profit preview wrong");
+assert(q("#storePreviewMargin").textContent.includes("71,4"),"store margin preview wrong");
 q("#addConsStore").click();
 await new Promise(r=>setTimeout(r,10));
+assert(!q('[data-cons-area-panel="manage"]').classList.contains("hidden"),"adding a point should open management");
 assert(q("#consDashPoints").textContent==="1","store dashboard did not count the new point");
 assert(q("#detailStock").textContent.includes("10"),"initial consigned stock wrong");
+assert(q("#detailUnitMargin").textContent.includes("71,4"),"managed point margin wrong");
 q("#movementSaleQty").value="3";q("#registerStoreSale").click();
 await new Promise(r=>setTimeout(r,10));
 assert(q("#detailStock").textContent.includes("7"),"stock did not fall after sale");
@@ -207,6 +242,17 @@ window.PrecificaConsignmentOps.setArea("dashboard");
 assert(q("#consDashPaid").textContent==="1","paid store was not counted in dashboard");
 
 window.PrecificaUI.activate("calc",{scroll:false});
+
+// Engine safety: invalid 100%+ manual commission must be blocked, never produce Infinity/NaN.
+q("#overridePct").value="100";q("#overridePct").dispatchEvent(new window.Event("input",{bubbles:true}));
+q("#calculateNowBtn").click();
+await new Promise(r=>setTimeout(r,10));
+assert(window.document.body.dataset.calcConfirmed==="false","100% commission should be rejected");
+assert(q("#calcValidationErrors").textContent.includes("comissão"),"invalid commission reason missing");
+q("#overridePct").value="";q("#overridePct").dispatchEvent(new window.Event("input",{bubbles:true}));
+q("#calculateNowBtn").click();
+await new Promise(r=>setTimeout(r,20));
+assert(window.document.body.dataset.calcConfirmed==="true","valid calculation did not recover after invalid commission");
 
 console.log("SMOKE: consignment ops ok");
 // Radar de Mercado: deterministic statistics + current calculator integration.

@@ -4,33 +4,33 @@
 var M=window.PrecificaConsignmentMath;
 if(!M)return;
 
-var KEY="precifica3d-consignment-v1";
-var SAVED_KEY="precifica3d-consignment-saved-v1";
+var KEY="precifica3d-consignment-v2";
+var SAVED_KEY="precifica3d-consignment-saved-v2";
 var defaults={
   mode:"consignment",
   uiMode:"simple",
-  costPerUnit:"",
-  salePrice:"7.90",
-  commissionPct:"30",
+  costPerUnit:"0",
+  salePrice:"0",
+  commissionPct:"0",
   otherFeesPct:"0",
-  deliveredQty:"20",
+  deliveredQty:"0",
   soldQty:"0",
   goalMode:"profit",
-  desiredProfit:"4",
-  desiredMarginPct:"40",
-  settlement:"quinzenal",
+  desiredProfit:"0",
+  desiredMarginPct:"0",
+  settlement:"",
   settlementCustom:"",
-  rounding:"x90",
-  wholesalePrice:"",
-  retailPrice:"",
-  resaleQty:"20",
+  rounding:"none",
+  wholesalePrice:"0",
+  retailPrice:"0",
+  resaleQty:"0",
   producerFeeMode:"percent",
   producerFeeValue:"0",
-  producerDesiredProfit:"4",
-  storeDesiredMarginPct:"30",
-  scenarioCommissions:["20","30","40","50"],
-  scenarioPrices:["5.90","7.90","9.90","12.90"],
-  healthyThresholdPct:"20",
+  producerDesiredProfit:"0",
+  storeDesiredMarginPct:"0",
+  scenarioCommissions:["0","0","0","0"],
+  scenarioPrices:["0","0","0","0"],
+  healthyThresholdPct:"0",
   imported:false
 };
 
@@ -52,8 +52,8 @@ function normalize(){
   if(!Array.isArray(state.scenarioCommissions)||state.scenarioCommissions.length!==4)state.scenarioCommissions=clone(defaults.scenarioCommissions);
   if(!Array.isArray(state.scenarioPrices)||state.scenarioPrices.length!==4)state.scenarioPrices=clone(defaults.scenarioPrices);
   if(!state.goalMode)state.goalMode="profit";
-  if(!state.rounding)state.rounding="x90";
-  if(!state.settlement)state.settlement="quinzenal";
+  if(!state.rounding)state.rounding="none";
+  if(state.settlement==null)state.settlement="";
   if(!state.mode)state.mode="consignment";
 }
 normalize();

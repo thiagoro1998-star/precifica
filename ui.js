@@ -4,14 +4,15 @@
 (function(){
 "use strict";
 var KEY="precifica3d-workspace-view";
-var VALID=["calc","market","consignment","catalog"];
+var VALID=["home","calc","market","consignment","catalog"];
 
 function sections(){
   return Array.from(document.querySelectorAll("#workspaceGrid > section"));
 }
 function assignViews(){
   sections().forEach(function(el){
-    if(el.id==="marketSection") el.dataset.workspaceView="market";
+    if(el.id==="homeSection") el.dataset.workspaceView="home";
+    else if(el.id==="marketSection") el.dataset.workspaceView="market";
     else if(el.id==="consignmentSection") el.dataset.workspaceView="consignment";
     else if(el.id==="catalogSection") el.dataset.workspaceView="catalog";
     else el.dataset.workspaceView="calc";
@@ -45,7 +46,7 @@ function activate(view,opts){
 }
 function init(){
   assignViews();
-  var saved="calc";
+  var saved="home";
   try{saved=localStorage.getItem(KEY)||"calc"}catch(e){}
   if(VALID.indexOf(saved)<0)saved="calc";
   document.querySelectorAll("[data-workspace-tab]").forEach(function(btn){
@@ -62,6 +63,8 @@ function init(){
   document.addEventListener("click",function(e){
     if(e.target.closest("#marketSaveProduct")) setTimeout(function(){activate("catalog")},0);
     if(e.target.closest("#resetBtn")) setTimeout(function(){activate("calc",{scroll:false})},0);
+    var jump=e.target.closest("[data-open-workspace]");
+    if(jump) setTimeout(function(){activate(jump.dataset.openWorkspace,{scroll:false})},0);
   });
   activate(saved,{scroll:false});
 }

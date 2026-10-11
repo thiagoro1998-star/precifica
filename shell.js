@@ -107,5 +107,5 @@ function init(){
   setAuthTab("login");
 }
 window.PrecificaShell={updateDashboard:updateDashboard,openAuth:openAuth};
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+init();
 })();

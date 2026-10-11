@@ -33,7 +33,7 @@
 /* Consignment operations hub */
 .cons-ops-section>.cb{display:grid;gap:14px}
 .cons-area-tabs{
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:6px;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:6px;
   border:1px solid #202d3e;border-radius:15px;background:#09111c
 }
 .cons-area-tab{
@@ -187,3 +187,16 @@
   .cons-detail-kpis,.cons-finance-line{grid-template-columns:1fr 1fr}
   .cons-sim-calcbar{align-items:stretch;flex-direction:column}.cons-sim-calcbar .btn{width:100%}
 }
+
+.calc-validation-errors{margin-top:10px;padding:10px 12px;border:1px solid rgba(255,99,99,.28);border-radius:10px;background:rgba(255,80,80,.06);color:#f2b0b0;font-size:9px;line-height:1.45}
+.calc-validation-errors b{color:#ffd0d0}.calc-validation-errors ul{margin:6px 0 0 16px;padding:0}.calc-validation-errors li{margin:3px 0}
+.cons-point-preview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px;padding:12px;border:1px solid #25354a;border-radius:13px;background:#0b131f}
+.cons-point-preview>div{padding:9px;border-radius:9px;background:#09111b}.cons-point-preview span,.cons-point-preview b{display:block}
+.cons-point-preview span{color:#6f7d92;font-size:8px}.cons-point-preview b{margin-top:4px;color:#e5edf5;font-size:13px}
+.cons-point-preview p{grid-column:1/-1;margin:1px 0 0;color:#6f7d92;font-size:8.5px}
+.cons-point-preview.pending{opacity:.62}
+.cons-new-actions{margin-top:11px;justify-content:flex-end}
+.cons-finance-five{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1000px){.cons-finance-five{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.cons-area-tabs{grid-template-columns:1fr 1fr}.cons-area-tab>span:last-child small{display:block}}
+@media(max-width:560px){.cons-point-preview{grid-template-columns:1fr}.cons-point-preview p{grid-column:1}.cons-new-actions{display:grid}.cons-new-actions .btn{width:100%}}

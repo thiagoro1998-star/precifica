@@ -50,6 +50,7 @@ function init(){
   document.addEventListener("input",function(e){if(relevantTarget(e.target))setPending("dirty")},true);
   document.addEventListener("change",function(e){if(relevantTarget(e.target))setPending("dirty")},true);
   document.addEventListener("click",function(e){
+    if(e.target.closest("#resetBtn,#importBtn")){setTimeout(function(){setPending("dirty")},0);return}
     if(!relevantTarget(e.target))return;
     var b=e.target.closest("button");
     if(!b)return;

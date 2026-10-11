@@ -8,7 +8,8 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Precifica 3D</title>
-<meta name="description" content="Calculadora profissional de precificação para impressão 3D">\n<link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.10.0">
+<meta name="description" content="Calculadora profissional de precificação para impressão 3D">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.10.0">
 <link rel="stylesheet" href="./style.css?v=1.13.0">\n<link rel="stylesheet" href="./pro-ui.css?v=1.13.0">
 </head>
 <body>
@@ -110,7 +111,7 @@
       </div>
     </section>
 
-    <section class="card span2">
+    <section class="card span2" id="projectSection">
       <div class="ch"><div class="num">01</div><div><h2>Projeto e peças</h2><div class="muted">Informe o que o fatiador mostra. Para kits/quebra-cabeças, some os fatiamentos que formam um único produto final.</div></div></div>
       <div class="cb">
         <div class="row">
@@ -124,7 +125,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="materialSection">
       <div class="ch"><div class="num">02</div><div><h2>Material</h2><div class="muted">Filamento e custo por grama.</div></div></div>
       <div class="cb">
         <div class="row"><div class="f s6"><label>Preset de filamento</label><select id="filamentPreset"></select></div><div class="f s6"><label>Material</label><select id="material"><option>PLA</option><option>PETG</option><option>ABS</option><option>ASA</option><option>TPU</option><option>Outro</option></select></div></div>
@@ -133,7 +134,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="printerSection">
       <div class="ch"><div class="num">03</div><div><h2>Impressora e energia</h2><div class="muted">Consumo, manutenção e custo elétrico.</div></div></div>
       <div class="cb">
         <div class="row"><div class="f s6"><label>Impressora</label><select id="printerPreset"></select></div><div class="f s6"><label>Consumo médio usado (W)</label><input class="input" id="printerWatts" type="number" min="0"><div class="hint">Estimativa de impressão; não é potência máxima da fonte.</div></div></div>
@@ -156,7 +157,7 @@
       </div>
     </section>
 
-    <section class="card span2">
+    <section class="card span2" id="finalSection">
       <div class="ch"><div class="num">04</div><div><h2>Produto final</h2><div class="muted">Embalagens, insumos, acabamento e frete.</div></div></div>
       <div class="cb">
         <div class="grid">
@@ -168,7 +169,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="taxSection">
       <div class="ch"><div class="num">05</div><div><h2>Impostos e caixa</h2><div class="muted">CPF, MEI, Simples e outros perfis.</div></div></div>
       <div class="cb">
         <label>Perfil fiscal</label>
@@ -181,7 +182,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="pricingSection">
       <div class="ch"><div class="num">06</div><div><h2>Precificação e canal</h2><div class="muted">Taxas automáticas por padrão.</div></div></div>
       <div class="cb">
         <h3 class="title">Canal principal</h3><div class="tabs" id="marketTabs"></div>
@@ -196,7 +197,7 @@
       </div>
     </section>
 
-    <section class="card span2">
+    <section class="card span2" id="resultSection">
       <div class="ch"><div class="num">07</div><div><h2>Resultado</h2><div class="muted">Custos, descontos, lucro e comparativo entre canais.</div></div></div>
       <div class="cb">
         <div class="stats"><div class="stat"><div class="k">Custo completo / unidade</div><div class="v" id="resCost">R$ 0,00</div></div><div class="stat a"><div class="k">Preço sugerido</div><div class="v" id="resPrice">R$ 0,00</div></div><div class="stat"><div class="k">Recebimento líquido</div><div class="v" id="resReceived">R$ 0,00</div></div><div class="stat"><div class="k">Lucro líquido</div><div class="v good" id="resProfit">R$ 0,00</div></div><div class="stat"><div class="k">Margem líquida</div><div class="v" id="resMargin">0%</div></div><div class="stat"><div class="k">Markup efetivo</div><div class="v" id="resMarkup">0%</div></div></div>
@@ -428,7 +429,7 @@
     </section>
 
     <section class="card span2" id="catalogSection">
-      <div class="ch"><div class="num">09</div><div><h2>Meu Catálogo de Rentabilidade</h2><div class="muted">Fotografias dos produtos que você já precificou. Salvo apenas neste navegador por enquanto.</div></div></div>
+      <div class="ch"><div class="num">10</div><div><h2>Meu Catálogo de Rentabilidade</h2><div class="muted">Fotografias dos produtos que você já precificou. Salvo apenas neste navegador por enquanto.</div></div></div>
       <div class="cb">
         <div class="market-kpis" id="catalogStats"></div>
         <div class="table" style="margin-top:13px"><table><thead><tr><th>Produto</th><th>Canal</th><th>Custo</th><th>Preço</th><th>Lucro/un.</th><th>Margem</th><th>Lucro/h</th><th></th></tr></thead><tbody id="catalogRows"></tbody></table></div>

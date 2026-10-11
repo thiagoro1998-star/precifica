@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <title>Precifica 3D</title>
 <meta name="description" content="Calculadora profissional de precificação para impressão 3D">\n<link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.10.0">
-<link rel="stylesheet" href="./style.css?v=1.12.0">
+<link rel="stylesheet" href="./style.css?v=1.13.0">\n<link rel="stylesheet" href="./pro-ui.css?v=1.13.0">
 </head>
 <body>
 <div class="app">
@@ -35,7 +35,10 @@
     <aside class="side-nav" aria-label="Áreas do Precifica">
       <div class="side-nav-title">MENU</div>
       <div class="side-tabs" role="tablist" aria-orientation="vertical">
-        <button class="side-tab active" data-workspace-tab="calc" role="tab" aria-selected="true">
+        <button class="side-tab active" data-workspace-tab="home" role="tab" aria-selected="true">
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9 20v-6h6v6"/></svg></span><span class="side-tab-copy"><strong>Início</strong><small>Visão geral e atalhos</small></span>
+        </button>
+        <button class="side-tab" data-workspace-tab="calc" role="tab" aria-selected="false">
           <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="M8 8h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg></span><span class="side-tab-copy"><strong>Precificação</strong><small>Projeto, custos e preço</small></span>
         </button>
         <button class="side-tab" data-workspace-tab="market" role="tab" aria-selected="false">
@@ -49,9 +52,64 @@
         </button>
       </div>
       <div class="side-nav-help"><span class="status-dot"></span><div><b>Motor ativo</b><small>Custos, taxas e mercado conectados.</small></div></div>
+      <div class="side-account">
+        <div class="side-account-avatar">P3</div>
+        <div class="side-account-copy"><b id="profileName">Modo local</b><small id="profileSub">Dados salvos neste navegador</small></div>
+        <button id="openAccount" aria-label="Abrir conta" title="Conta">•••</button>
+      </div>
     </aside>
     <main class="workspace-main">
       <div class="grid" id="workspaceGrid">
+    <section class="dashboard-view span2" id="homeSection">
+      <div class="dashboard-wrap">
+        <div class="dashboard-hero">
+          <div class="dashboard-kicker">PRECIFICA 3D · WORKSPACE</div>
+          <h2>Decida preço, margem e canal sem trabalhar no escuro.</h2>
+          <p>Seu painel reúne custo de produção, marketplaces, consignação e histórico de rentabilidade em uma experiência única. Os cálculos continuam usando o mesmo motor matemático do Precifica.</p>
+          <div class="dashboard-hero-actions">
+            <button class="btn primary" data-open-workspace="calc">+ Novo cálculo</button>
+            <button class="btn" data-open-workspace="market">Abrir Radar de Mercado</button>
+            <button class="btn" data-open-workspace="consignment">Simular consignação</button>
+          </div>
+          <div class="dashboard-status"><i></i><span>Motor financeiro ativo · dados locais</span></div>
+        </div>
+
+        <div class="dash-kpis">
+          <div class="dash-kpi"><span>Custo atual / un.</span><b id="dashCost">R$ 0,00</b></div>
+          <div class="dash-kpi accent"><span>Preço sugerido</span><b id="dashPrice">R$ 0,00</b></div>
+          <div class="dash-kpi"><span>Lucro líquido / un.</span><b id="dashProfit">R$ 0,00</b></div>
+          <div class="dash-kpi"><span>Margem líquida</span><b id="dashMargin">0%</b></div>
+          <div class="dash-kpi"><span>Produtos salvos</span><b id="dashCatalog">0</b></div>
+          <div class="dash-kpi"><span>Referências de mercado</span><b id="dashRefs">0</b></div>
+        </div>
+
+        <div class="dashboard-group">
+          <div class="dashboard-group-head"><div><h3>Ferramentas principais</h3><span>Entre direto no que precisa fazer agora.</span></div></div>
+          <div class="module-grid">
+            <button class="module-card orange" data-open-workspace="calc"><span class="module-icon">R$</span><b>Precificação 3D</b><small>Custo real, energia, material, taxas e preço por canal.</small><span class="module-arrow">→</span></button>
+            <button class="module-card cyan" data-open-workspace="market"><span class="module-icon">↗</span><b>Radar de Mercado</b><small>Compare suas contas com referências reais que você encontrou.</small><span class="module-arrow">→</span></button>
+            <button class="module-card green" data-open-workspace="consignment"><span class="module-icon">%</span><b>Consignação</b><small>Simule comissão, repasse, atacado e lucro em lojas parceiras.</small><span class="module-arrow">→</span></button>
+            <button class="module-card purple" data-open-workspace="catalog"><span class="module-icon">▣</span><b>Catálogo</b><small>Guarde snapshots de custo, preço, margem e lucro por produto.</small><span class="module-arrow">→</span></button>
+          </div>
+        </div>
+
+        <div class="dashboard-group">
+          <div class="dashboard-group-head"><div><h3>Fluxo recomendado</h3><span>Uma sequência simples para tomar decisões melhores.</span></div></div>
+          <div class="workflow-strip">
+            <div class="workflow-step"><strong><i>1</i>Calcule</strong><span>Informe peso, tempo, filamento, energia e custos reais.</span></div>
+            <div class="workflow-step"><strong><i>2</i>Compare</strong><span>Veja o preço necessário nos canais e confronte com o mercado.</span></div>
+            <div class="workflow-step"><strong><i>3</i>Negocie</strong><span>Teste consignação ou atacado sem confundir comissão com margem.</span></div>
+            <div class="workflow-step"><strong><i>4</i>Registre</strong><span>Salve produtos rentáveis no catálogo para construir histórico.</span></div>
+          </div>
+        </div>
+
+        <div class="dashboard-group">
+          <div class="dashboard-group-head"><div><h3>Conta e sincronização</h3><span>Estrutura pronta para a futura camada de monetização.</span></div><button class="btn" id="dashOpenAccount">Ver conta</button></div>
+          <div class="neutral">Hoje os seus presets e históricos continuam salvos neste navegador. A tela de conta foi preparada visualmente para futura autenticação e sincronização em nuvem, sem fingir que já existe uma conta segura onde ainda não há backend conectado.</div>
+        </div>
+      </div>
+    </section>
+
     <section class="card span2">
       <div class="ch"><div class="num">01</div><div><h2>Projeto e peças</h2><div class="muted">Informe o que o fatiador mostra. Para kits/quebra-cabeças, some os fatiamentos que formam um único produto final.</div></div></div>
       <div class="cb">
@@ -381,7 +439,7 @@
     </main>
   </div>
   
-  <div class="footer">Precifica 3D · motor 1.12.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+  <div class="footer">Precifica 3D · motor 1.13.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
 </div>
 
 <div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>
@@ -389,7 +447,69 @@
 <div class="modal" id="packagingModal"><div class="modalBox"><div class="modalHead"><h3>Catálogo de embalagens</h3><button class="icon" data-close>✕</button></div><div id="packagingEditor"></div><button class="btn primary" id="addPackagingPreset">+ Nova embalagem</button></div></div>
 <div class="modal" id="supplyModal"><div class="modalBox"><div class="modalHead"><h3>Catálogo de insumos</h3><button class="icon" data-close>✕</button></div><div id="supplyEditor"></div><button class="btn primary" id="addSupplyPreset">+ Novo insumo</button></div></div>
 
-<script src="./app.js?v=1.6.0"></script>
+<div class="auth-modal" id="accountModal" aria-hidden="true">
+  <div class="auth-shell">
+    <section class="auth-brand-pane">
+      <div class="auth-brand-lockup">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path class="mark-shell" d="M24 3.8 41.6 14v20L24 44.2 6.4 34V14L24 3.8Z"/><path class="mark-layer mark-layer-1" d="m12 16.2 12-6.9 12 6.9-12 6.9-12-6.9Z"/><path class="mark-layer mark-layer-2" d="m12 23.7 12 6.9 12-6.9v5.7l-12 6.9-12-6.9v-5.7Z"/><path class="mark-calc" d="M31.2 28.4h5.3v8.1h-5.3z"/><path class="mark-eq" d="M32.4 31.1h2.9M32.4 33.7h2.9"/></svg>
+        </div>
+        <h2>Precifica <span>3D</span></h2>
+      </div>
+      <h3>Seu negócio 3D começa pelos números certos.</h3>
+      <p>Uma interface feita para makers acompanharem custo, preço, margem, mercado e negociação sem depender de planilhas espalhadas.</p>
+      <div class="auth-points">
+        <div class="auth-point"><i>✓</i>Motor de precificação determinístico</div>
+        <div class="auth-point"><i>✓</i>Comparativo por marketplace</div>
+        <div class="auth-point"><i>✓</i>Consignação e atacado</div>
+        <div class="auth-point"><i>✓</i>Catálogo de rentabilidade</div>
+      </div>
+    </section>
+    <section class="auth-form-pane">
+      <button class="auth-close" id="closeAccount" aria-label="Fechar">✕</button>
+      <div class="auth-tabs">
+        <button class="active" data-auth-tab="login">Entrar</button>
+        <button data-auth-tab="signup">Criar conta</button>
+      </div>
+
+      <div class="auth-panel" data-auth-panel="login">
+        <h3>Bem-vindo de volta</h3>
+        <p>Interface preparada para a futura sincronização em nuvem.</p>
+        <form class="cloud-auth-form">
+          <label>E-mail</label><input class="input" type="email" autocomplete="email" placeholder="seu@email.com">
+          <label>Senha</label><input class="input" type="password" autocomplete="current-password" placeholder="••••••••">
+          <button class="btn primary auth-primary" type="submit">Entrar</button>
+        </form>
+      </div>
+
+      <div class="auth-panel hidden" data-auth-panel="signup">
+        <h3>Crie seu espaço</h3>
+        <p>O cadastro em nuvem será conectado em uma etapa própria de backend.</p>
+        <form class="cloud-auth-form">
+          <label>Nome</label><input class="input" autocomplete="name" placeholder="Seu nome">
+          <label>E-mail</label><input class="input" type="email" autocomplete="email" placeholder="seu@email.com">
+          <label>Senha</label><input class="input" type="password" autocomplete="new-password" placeholder="Crie uma senha forte">
+          <button class="btn primary auth-primary" type="submit">Criar conta</button>
+        </form>
+      </div>
+
+      <div class="auth-divider">OU USE AGORA SEM NUVEM</div>
+      <div class="local-profile-box">
+        <b>Perfil local neste dispositivo</b>
+        <p>Não salva senha e não envia dados. Serve apenas para personalizar o painel enquanto o backend de autenticação não está conectado.</p>
+        <div class="local-profile-grid">
+          <input class="input" id="localProfileName" placeholder="Nome de exibição">
+          <input class="input" id="localProfileEmail" type="email" placeholder="E-mail (opcional)">
+        </div>
+        <button class="btn auth-primary" id="saveLocalProfile" type="button">Usar perfil local</button>
+      </div>
+      <div class="auth-note">Segurança primeiro: nenhum formulário de senha desta prévia é enviado ou armazenado.</div>
+    </section>
+  </div>
+</div>
+<div class="shell-toast" id="shellToast"></div>
+
+<script src="./app.js?v=1.13.0"></script>
 <script src="./market.js?v=1.7.0"></script>
 <script src="./ui.js?v=1.8.0"></script>
 </body></html>

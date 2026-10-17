@@ -363,14 +363,14 @@ function channelBreakpoints(ch){
 function priceFor(target,ch){
  var t=Math.max(0,num(target));
  return FX.number(FX.solveSegments({
-   segments:channelBreakpoints(ch),target:t,initialHigh:costs().total+t+20,
+   segments:channelBreakpoints(ch),target:t,initialHigh:costs().total+t+20,currencyStep:"0.01",
    metric:function(p){return resultAt(p,ch).profit}
  }));
 }
 function priceForMargin(targetPct,ch){
  var t=Math.max(0,Math.min(95,num(targetPct)));
  return FX.number(FX.solveSegments({
-   segments:channelBreakpoints(ch),target:t,initialHigh:costs().total*3+20,
+   segments:channelBreakpoints(ch),target:t,initialHigh:costs().total*3+20,currencyStep:"0.01",
    metric:function(p){return resultAt(p,ch).margin}
  }));
 }

@@ -8,6 +8,8 @@ var KEY="precifica3d-consignment-stores-v2";
 var AREA_KEY="precifica3d-consignment-area-v1";
 var stores=[];
 var selectedId=null;
+var FX=window.PrecificaFinance;
+if(!FX)throw new Error("Motor financeiro de precisão não carregado na consignação.");
 
 function q(s){return document.querySelector(s)}
 function qa(s){return Array.from(document.querySelectorAll(s))}
@@ -26,30 +28,34 @@ function flash(t){
   clearTimeout(flash._t);flash._t=setTimeout(function(){el.classList.remove("show")},2200);
 }
 function metrics(s){
-  var delivered=i(s.deliveredQty),sold=i(s.soldQty),returned=i(s.returnedQty);
-  var stock=Math.max(0,delivered-sold-returned);
-  var price=Math.max(0,n(s.salePrice)),comm=Math.max(0,Math.min(99.99,n(s.commissionPct)))/100;
-  var gross=sold*price,storeShare=gross*comm,producer=gross-storeShare;
-  var paid=Math.max(0,n(s.paidAmount)),due=Math.max(0,producer-paid);
-  var cost=Math.max(0,n(s.costPerUnit)),hasCost=cost>0;
-  var unitRepasse=price*(1-comm),unitProfit=hasCost?unitRepasse-cost:0,unitMargin=hasCost&&unitRepasse>0?unitProfit/unitRepasse*100:null;
-  var realizedCost=sold*cost,projectedProfit=hasCost?producer-realizedCost:null;
-  return{delivered:delivered,sold:sold,returned:returned,stock:stock,price:price,commission:comm,gross:gross,storeShare:storeShare,producer:producer,paid:paid,due:due,cost:cost,hasCost:hasCost,unitRepasse:unitRepasse,unitProfit:unitProfit,unitMargin:unitMargin,projectedProfit:projectedProfit};
+  var delivered=i(s.deliveredQty),sold=i(s.soldQty),returned=i(s.returnedQty),stock=Math.max(0,delivered-sold-returned);
+  var price=Math.max(0,n(s.salePrice)),commissionPct=Math.max(0,Math.min(99.99,n(s.commissionPct))),cost=Math.max(0,n(s.costPerUnit));
+  var priceD=FX.norm(price),soldD=FX.norm(sold),comm=FX.rate(commissionPct),costD=FX.norm(cost);
+  var grossD=priceD.times(soldD),storeShareD=grossD.times(comm),producerD=grossD.minus(storeShareD);
+  var paidD=FX.norm(Math.max(0,n(s.paidAmount))),dueD=FX.Decimal.max(FX.norm(0),producerD.minus(paidD));
+  var unitRepasseD=priceD.times(FX.norm(1).minus(comm)),unitProfitD=unitRepasseD.minus(costD);
+  var unitMargin=priceD.gt(0)?FX.number(unitProfitD.div(priceD).times(100)):null;
+  var roi=costD.gt(0)?FX.number(unitProfitD.div(costD).times(100)):null;
+  var projectedProfitD=producerD.minus(costD.times(soldD));
+  return{
+    delivered:delivered,sold:sold,returned:returned,stock:stock,price:price,commissionPct:commissionPct,commission:commissionPct/100,
+    gross:FX.number(grossD),storeShare:FX.number(storeShareD),producer:FX.number(producerD),paid:FX.number(paidD),due:FX.number(dueD),
+    cost:cost,hasCost:cost>0,unitRepasse:FX.number(unitRepasseD),unitProfit:FX.number(unitProfitD),unitMargin:cost>0?unitMargin:null,roi:cost>0?roi:null,
+    projectedProfit:cost>0?FX.number(projectedProfitD):null,stockCost:FX.number(costD.times(stock)),potentialRetail:FX.number(priceD.times(stock))
+  };
 }
 function totals(){
   return stores.reduce(function(a,s){
     if(s.archived)return a;
     var m=metrics(s);
-    a.points++;
-    a.stock+=m.stock;
-    a.delivered+=m.delivered;
-    a.sold+=m.sold;
-    a.due+=m.due;
-    a.received+=m.paid;
+    a.points++;a.stock+=m.stock;a.delivered+=m.delivered;a.sold+=m.sold;
+    a.due=FX.number(FX.norm(a.due).plus(m.due));a.received=FX.number(FX.norm(a.received).plus(m.paid));
+    a.stockCost=FX.number(FX.norm(a.stockCost).plus(m.stockCost));a.potentialRetail=FX.number(FX.norm(a.potentialRetail).plus(m.potentialRetail));
+    a.commissionWeighted+=m.commissionPct*m.stock;a.commissionWeight+=m.stock;
     if(m.due>.009)a.owing++;
     if(m.producer>.009&&m.due<=.009)a.paidStores++;
     return a;
-  },{points:0,stock:0,delivered:0,sold:0,due:0,received:0,owing:0,paidStores:0});
+  },{points:0,stock:0,delivered:0,sold:0,due:0,received:0,stockCost:0,potentialRetail:0,owing:0,paidStores:0,commissionWeighted:0,commissionWeight:0});
 }
 function status(m){
   if(m.producer>.009&&m.due<=.009)return["Pago","paid"];
@@ -80,17 +86,20 @@ function renderDashboard(){
   if(q("#consDashPieces"))q("#consDashPieces").textContent=String(t.stock);
   if(q("#consDashDue"))q("#consDashDue").textContent=brl(t.due);
   if(q("#consDashReceived"))q("#consDashReceived").textContent=brl(t.received);
+  if(q("#consDashStockCost"))q("#consDashStockCost").textContent=brl(t.stockCost);
+  if(q("#consDashPotential"))q("#consDashPotential").textContent=brl(t.potentialRetail);
   if(q("#consDashOwing"))q("#consDashOwing").textContent=String(t.owing);
   if(q("#consDashPaid"))q("#consDashPaid").textContent=String(t.paidStores);
   var body=q("#consStoresSummary");if(!body)return;
   var active=stores.filter(function(s){return !s.archived});
   if(!active.length){
-    body.innerHTML='<tr><td colspan="9"><div class="cons-empty-state"><b>Nenhum ponto cadastrado</b><span>Adicione sua primeira loja/ponto para começar a controlar estoque e recebimentos.</span><button class="btn primary" data-go-cons-stores>Adicionar primeiro ponto</button></div></td></tr>';
+    body.innerHTML='<tr><td colspan="10"><div class="cons-empty-state"><b>Nenhum ponto cadastrado</b><span>Adicione sua primeira loja/ponto para começar a controlar estoque e recebimentos.</span><button class="btn primary" data-go-cons-stores>Adicionar primeiro ponto</button></div></td></tr>';
   }else{
     body.innerHTML=active.map(function(s){
       var m=metrics(s),st=status(m);
       return '<tr><td><b>'+esc(s.name)+'</b><small class="table-sub">'+esc(s.address||"Sem endereço")+'</small></td>'+
         '<td>'+m.stock+' un.</td><td>'+m.sold+' un.</td><td>'+brl(m.producer)+'</td>'+
+        '<td>'+m.commissionPct.toFixed(1).replace(".",",")+'%</td>'+
         '<td>'+(m.unitMargin===null?"—":m.unitMargin.toFixed(1).replace(".",",")+"%")+'</td>'+
         '<td class="'+(m.due>.009?"warn":"good")+'"><b>'+brl(m.due)+'</b></td>'+
         '<td>'+brl(m.paid)+'</td><td><span class="cons-status '+st[1]+'">'+st[0]+'</span></td>'+
@@ -110,6 +119,7 @@ function clearStoreForm(){
   ["#storeName","#storeAddress","#storeProduct"].forEach(function(sel){var el=q(sel);if(el)el.value=""});
   ["#storeQty","#storePrice","#storeCommission","#storeCost"].forEach(function(sel){var el=q(sel);if(el)el.value="0"});
   if(q("#storeSettlement"))q("#storeSettlement").value="";
+  qa(".store-quick.active").forEach(function(x){x.classList.remove("active")});
   resetStorePreview();
 }
 function resetStorePreview(){
@@ -123,12 +133,15 @@ function previewStoreTerms(){
   var price=n(q("#storePrice").value),commission=n(q("#storeCommission").value),cost=n(q("#storeCost").value);
   var box=q("#storeMarginPreview");
   if(price<=0){flash("Informe o preço ao público para calcular a condição.");return}
-  if(commission<0||commission>=100){flash("Revise a comissão da loja.");return}
-  var repasse=price*(1-commission/100),profit=cost>0?repasse-cost:0,margin=cost>0&&repasse>0?profit/repasse*100:null;
-  q("#storePreviewRepasse").textContent=brl(repasse);
-  q("#storePreviewProfit").textContent=cost>0?brl(profit):"—";
-  q("#storePreviewMargin").textContent=margin===null?"—":margin.toFixed(1).replace(".",",")+"%";
-  q("#storePreviewStatus").textContent=cost>0?"Condição calculada. A margem é lucro estimado ÷ seu repasse líquido.":"Repasse calculado. Informe o custo da peça para calcular lucro e margem.";
+  if(commission<0||commission>=100){flash("Revise a margem/comissão do lojista.");return}
+  var r=FX.consignment({
+    costPerUnit:cost,salePrice:price,commissionPct:commission,otherFeesPct:0,
+    deliveredQty:n(q("#storeQty").value),soldQty:0,goalMode:"profit",desiredProfit:0,desiredMarginPct:0,rounding:"none"
+  });
+  q("#storePreviewRepasse").textContent=brl(FX.number(r.producerNet));
+  q("#storePreviewProfit").textContent=cost>0?brl(FX.number(r.unitProfit)):"—";
+  q("#storePreviewMargin").textContent=cost>0?(FX.number(r.netMargin)*100).toFixed(1).replace(".",",")+"%":"—";
+  q("#storePreviewStatus").textContent=cost>0?"Condição calculada com Decimal: margem líquida = lucro ÷ preço ao público.":"Repasse calculado. Informe o custo da peça para calcular lucro e margem.";
   if(box)box.classList.remove("pending");
 }
 function importPricingCost(){
@@ -298,6 +311,15 @@ function init(){
   q("#settleStore").onclick=settleStore;
   q("#saveStoreTerms").onclick=saveStoreTerms;
   q("#archiveStore").onclick=archiveStore;
+  qa(".store-quick").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var el=q("#"+btn.dataset.storeField);if(!el)return;
+      el.value=btn.dataset.storeValue;
+      el.dispatchEvent(new Event("change",{bubbles:true}));
+      resetStorePreview();
+      qa('.store-quick[data-store-field="'+btn.dataset.storeField+'"]').forEach(function(x){x.classList.toggle("active",x===btn)});
+    });
+  });
   ["#storeName","#storeAddress","#storeProduct","#storeQty","#storePrice","#storeCommission","#storeCost","#storeSettlement"].forEach(function(sel){
     var el=q(sel);if(!el)return;
     el.addEventListener("input",resetStorePreview);el.addEventListener("change",resetStorePreview);

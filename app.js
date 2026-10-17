@@ -1,9 +1,13 @@
 
 var $=function(s){return document.querySelector(s)}, $$=function(s){return Array.from(document.querySelectorAll(s))};
+var FX=window.PrecificaFinance;
+if(!FX)throw new Error("Motor financeiro de precisão não carregado.");
+var PREF_KEY="precifica3d-defaults-v1";
 function num(v){var x=parseFloat(String(v==null?"":v).replace(",","."));return Number.isFinite(x)?x:0}
 function brl(v){return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number.isFinite(v)?v:0)}
 function pc(v){return (Number.isFinite(v)?v:0).toFixed(1).replace(".",",")+"%"}
 function id(){return Math.random().toString(36).slice(2,9)}
+function escHtmlAttr(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 var KEY="precifica3d-presets-v1";
 var def={
  filaments:[{id:"pla65",name:"PLA 1 kg — R$ 65",material:"PLA",price:65,weight:1000}],
@@ -27,6 +31,33 @@ var def={
 function clone(x){return JSON.parse(JSON.stringify(x))}
 function load(){try{var x=JSON.parse(localStorage.getItem(KEY));return x?Object.assign(clone(def),x):clone(def)}catch(e){return clone(def)}}
 function save(){localStorage.setItem(KEY,JSON.stringify(presets))}
+function loadDefaults(){try{return JSON.parse(localStorage.getItem(PREF_KEY))||null}catch(e){return null}}
+function saveDefaults(){
+ var providerSel=$("#distributorSelect"),providerOpt=providerSel&&providerSel.selectedOptions?providerSel.selectedOptions[0]:null;
+ var p={
+  selectedFilament:state.selectedFilament||"",
+  selectedPrinter:state.selectedPrinter||"",
+  energyMode:state.energyMode||"reference",
+  uf:$("#stateSelect")?$("#stateSelect").value:"",
+  city:$("#citySelect")?$("#citySelect").value:"",
+  providerKey:providerOpt?(providerOpt.dataset.key||providerOpt.textContent||""):"",
+  savedAt:new Date().toISOString()
+ };
+ localStorage.setItem(PREF_KEY,JSON.stringify(p));
+ updateDefaultsStatus(p);
+ return p;
+}
+function clearDefaults(){localStorage.removeItem(PREF_KEY);updateDefaultsStatus(null)}
+function updateDefaultsStatus(p){
+ var el=$("#savedDefaultsStatus");if(!el)return;
+ if(!p){el.textContent="Nenhum padrão pessoal salvo.";return}
+ var fil=presets.filaments.find(function(x){return x.id===p.selectedFilament}),pr=presets.printers.find(function(x){return x.id===p.selectedPrinter});
+ var parts=[];
+ if(fil)parts.push(fil.name);
+ if(pr)parts.push(pr.name);
+ if(p.uf)parts.push(p.city?p.city+" / "+p.uf:p.uf);
+ el.textContent=parts.length?"Padrões ativos: "+parts.join(" · "):"Padrões salvos.";
+}
 var presets=load();
 function freshCalcState(){
  return{
@@ -116,7 +147,7 @@ async function fetchAneelTariff(provider){
 function erate(){
  if(state.energyMode==="bill"){
    var v=num($("#billValue").value),k=num($("#billKwh").value);
-   return k>0?{rate:v/k,source:"pela sua conta · valor total ÷ kWh"}:{rate:0,source:"preencha valor e kWh da conta"};
+   return k>0?{rate:FX.number(FX.norm(v).div(k)),source:"pela sua conta · valor total ÷ kWh"}:{rate:0,source:"preencha valor e kWh da conta"};
  }
  if(state.energyMode==="manual"){
    var m=num($("#manualKwh").value);
@@ -227,55 +258,106 @@ function post(){
 }
 
 function productionSummary(){
- var f=presets.filaments.find(function(x){return x.id===state.selectedFilament}),cg=f?f.price/Math.max(1,f.weight):0,e=erate(),
-     watts=num($("#printerWatts").value),maintRate=num($("#maintenanceHour").value),fail=1+failRate()/100;
- var filament=0,energy=0,maintenance=0,totalWeight=0,totalHours=0,slicerRef=0,hasSlicerRef=false,details=[];
+ var f=presets.filaments.find(function(x){return x.id===state.selectedFilament}),e=erate(),
+     watts=num($("#printerWatts").value),maintRate=num($("#maintenanceHour").value);
+ var filament=FX.norm(0),energy=FX.norm(0),maintenance=FX.norm(0),totalWeight=FX.norm(0),totalHours=FX.norm(0),slicerRef=FX.norm(0),hasSlicerRef=false,details=[];
  var rows=state.mode==="equal"?state.pieces.slice(0,1):state.pieces;
  rows.forEach(function(p,i){
-   var q=Math.max(1,num(p.qty)),w=num(p.weight),h=num(p.hours)+num(p.minutes)/60;
-   var fil=w*cg*fail/q, en=h*watts/1000*e.rate/q, ma=h*maintRate/q, sr=num(p.slicerCost)/q;
-   filament+=fil;energy+=en;maintenance+=ma;totalWeight+=w;totalHours+=h;
-   if(num(p.slicerCost)>0){slicerRef+=sr;hasSlicerRef=true}
-   details.push({name:p.name||("Fatiamento "+(i+1)),weight:w,hours:h,outputs:q,filament:fil,energy:en,maintenance:ma,slicerRef:num(p.slicerCost)>0?sr:null});
+   var outputs=Math.max(1,num(p.qty)),w=num(p.weight),h=FX.number(FX.norm(num(p.hours)).plus(FX.norm(num(p.minutes)).div(60)));
+   var unit=FX.productionUnit({
+     weightG:w,hours:h,outputs:outputs,
+     filamentPrice:f?f.price:0,filamentWeightG:f?f.weight:1,
+     watts:watts,kwhRate:e.rate,maintenancePerHour:maintRate,failurePct:failRate()
+   });
+   var sr=FX.number(FX.norm(num(p.slicerCost)).div(outputs));
+   filament=filament.plus(unit.filament);energy=energy.plus(unit.energy);maintenance=maintenance.plus(unit.maintenance);
+   totalWeight=totalWeight.plus(w);totalHours=totalHours.plus(h);
+   if(num(p.slicerCost)>0){slicerRef=slicerRef.plus(sr);hasSlicerRef=true}
+   details.push({
+    name:p.name||("Fatiamento "+(i+1)),weight:w,hours:h,outputs:outputs,
+    filament:FX.number(unit.filament),energy:FX.number(unit.energy),maintenance:FX.number(unit.maintenance),
+    slicerRef:num(p.slicerCost)>0?sr:null
+   });
  });
- return{filament:filament,energy:energy,maintenance:maintenance,totalWeight:totalWeight,totalHours:totalHours,slicerRef:hasSlicerRef?slicerRef:null,details:details,hoursPerUnit:details.reduce(function(a,x){return a+x.hours/x.outputs},0)}
+ var hoursPerUnit=details.reduce(function(a,x){return a.plus(FX.norm(x.hours).div(x.outputs))},FX.norm(0));
+ return{
+  filament:FX.number(filament),energy:FX.number(energy),maintenance:FX.number(maintenance),
+  totalWeight:FX.number(totalWeight),totalHours:FX.number(totalHours),
+  slicerRef:hasSlicerRef?FX.number(slicerRef):null,details:details,hoursPerUnit:FX.number(hoursPerUnit)
+ };
 }
 function totals(){
  var p=productionSummary();
  return{weight:p.totalWeight,hours:p.totalHours,units:1}
 }
 function costs(){
- var p=productionSummary(),pack=state.packaging.reduce(function(s,x){return s+num(x.unit)*num(x.qty)},0),
-     sup=state.supplies.reduce(function(s,x){return s+num(x.unit)*num(x.qty)},0),fr=num($("#sellerFreight").value),pp=post();
- return{filament:p.filament,energy:p.energy,maintenance:p.maintenance,packaging:pack,supplies:sup,freight:fr,post:pp,
- total:p.filament+p.energy+p.maintenance+pack+sup+fr+pp,projectEnergy:p.details.reduce(function(a,x){return a+x.energy*x.outputs},0),
- hoursPerUnit:p.hoursPerUnit,slicerRef:p.slicerRef,productionDetails:p.details}
+ var p=productionSummary(),
+     packD=state.packaging.reduce(function(a,x){return a.plus(FX.norm(x.unit).times(num(x.qty)))},FX.norm(0)),
+     supD=state.supplies.reduce(function(a,x){return a.plus(FX.norm(x.unit).times(num(x.qty)))},FX.norm(0)),
+     frD=FX.norm($("#sellerFreight").value),postD=FX.norm(post());
+ var totalD=FX.sum([p.filament,p.energy,p.maintenance,packD,supD,frD,postD]);
+ var projectEnergyD=p.details.reduce(function(a,x){return a.plus(FX.norm(x.energy).times(x.outputs))},FX.norm(0));
+ return{filament:p.filament,energy:p.energy,maintenance:p.maintenance,packaging:FX.number(packD),supplies:FX.number(supD),freight:FX.number(frD),post:FX.number(postD),
+ total:FX.number(totalD),projectEnergy:FX.number(projectEnergyD),hoursPerUnit:p.hoursPerUnit,slicerRef:p.slicerRef,productionDetails:p.details}
 }
-function simples(rbt,industry){if(rbt<=0)return 0;var a=industry?[[180000,.045,0],[360000,.078,5940],[720000,.10,13860],[1800000,.112,22500],[3600000,.147,85500],[4800000,.30,720000]]:[[180000,.04,0],[360000,.073,5940],[720000,.095,13860],[1800000,.107,22500],[3600000,.143,87300],[4800000,.19,378000]];var row=a.find(function(x){return rbt<=x[0]})||a[a.length-1];return Math.max(0,(rbt*row[1]-row[2])/rbt*100)}
+function simples(rbt,industry){
+ if(rbt<=0)return 0;
+ var a=industry?[[180000,"0.045",0],[360000,"0.078",5940],[720000,"0.10",13860],[1800000,"0.112",22500],[3600000,"0.147",85500],[4800000,"0.30",720000]]:[[180000,"0.04",0],[360000,"0.073",5940],[720000,"0.095",13860],[1800000,"0.107",22500],[3600000,"0.143",87300],[4800000,"0.19",378000]];
+ var row=a.find(function(x){return rbt<=x[0]})||a[a.length-1],r=FX.norm(rbt);
+ return FX.number(FX.Decimal.max(FX.norm(0),r.times(row[1]).minus(row[2]).div(r).times(100)))
+}
 function tax(){
  var p=$("#taxProfile").value,rate=num($("#manualTaxRate").value),fixed=0,note="Manual / 0%";
  if(p==="simplesCommerce"||p==="simplesIndustry"){rate=simples(num($("#rbt12").value),p==="simplesIndustry");note="Simples calculado por RBT12"}
- if(p.indexOf("mei")===0){var monthly=p==="meiService"?86.05:p==="meiBoth"?87.05:82.05;if($("#meiAllocate").checked)fixed=monthly/Math.max(1,num($("#meiOrders").value));note="MEI: "+brl(monthly)+"/mês"+(fixed?" · "+brl(fixed)+"/pedido rateado":"")}
+ if(p.indexOf("mei")===0){var monthly=p==="meiService"?86.05:p==="meiBoth"?87.05:82.05;if($("#meiAllocate").checked)fixed=FX.number(FX.norm(monthly).div(Math.max(1,num($("#meiOrders").value))));note="MEI: "+brl(monthly)+"/mês"+(fixed?" · "+brl(fixed)+"/pedido rateado":"")}
  if(p==="cpf"&&num($("#manualTaxRate").value)===0){rate=0;note="CPF: sem alíquota automática"}
  return{rate:rate,fixed:fixed,note:note}
 }
-function cac(){return $("#adsOn").checked&&num($("#adsOrders").value)>0?num($("#adsSpend").value)/num($("#adsOrders").value):0}
+function cac(){return $("#adsOn").checked&&num($("#adsOrders").value)>0?FX.number(FX.norm($("#adsSpend").value).div($("#adsOrders").value)):0}
 function loss(){return $("#lossReserve").value==="custom"?num($("#lossCustom").value):num($("#lossReserve").value)}
-function shopee(price){var oct=Date.now()>=new Date("2026-10-01T00:00:00-03:00").getTime();if(price<8)return{percent:20,fixed:price*.5};if(price<80)return{percent:20,fixed:oct?4.5:4};if(price<100)return{percent:14,fixed:16};if(price<200)return{percent:14,fixed:20};return{percent:14,fixed:26}}
-function ml(price,premium){var fixed=0;if(price<12.5)fixed=price*.5;else if(price<29)fixed=6.25;else if(price<50)fixed=6.5;else if(price<79)fixed=6.75;return{percent:premium?19:14,fixed:fixed}}
+function shopee(price){
+ var oct=Date.now()>=new Date("2026-10-01T00:00:00-03:00").getTime();
+ if(price<8)return{percent:20,fixed:0,extraPercent:50,extraFixed:0};
+ if(price<80)return{percent:20,fixed:oct?4.5:4,extraPercent:0,extraFixed:0};
+ if(price<100)return{percent:14,fixed:16,extraPercent:0,extraFixed:0};
+ if(price<200)return{percent:14,fixed:20,extraPercent:0,extraFixed:0};
+ return{percent:14,fixed:26,extraPercent:0,extraFixed:0}
+}
+function ml(price,premium){
+ var fixed=0,extraPercent=0;
+ if(price<12.5)extraPercent=50;
+ else if(price<29)fixed=6.25;
+ else if(price<50)fixed=6.5;
+ else if(price<79)fixed=6.75;
+ return{percent:premium?19:14,fixed:fixed,extraPercent:extraPercent,extraFixed:0}
+}
 function fee(price,ch){
- var percent=0,fixed=0,extra=0;
- if(ch==="shopee"){var s=shopee(price);percent=s.percent;fixed=s.fixed}
- else if(ch==="mlclassic"||ch==="mlpremium"){var m=ml(price,ch==="mlpremium");percent=m.percent;fixed=m.fixed}
+ var percent=0,fixed=0,extraPercent=0,extraFixed=0;
+ if(ch==="shopee"){var ss=shopee(price);percent=ss.percent;fixed=ss.fixed;extraPercent=ss.extraPercent;extraFixed=ss.extraFixed}
+ else if(ch==="mlclassic"||ch==="mlpremium"){var mm=ml(price,ch==="mlpremium");percent=mm.percent;fixed=mm.fixed;extraPercent=mm.extraPercent;extraFixed=mm.extraFixed}
  else if(ch==="amazon"){percent=amazonCats[state.channelOpts.amazonCategory]||15;fixed=state.channelOpts.amazonPlan==="individual"?2:0}
  else if(ch==="magalu"){percent=state.channelOpts.magaluPromo?9.9:18;fixed=state.channelOpts.magaluItemFee?5.5:0}
- else if(ch==="tiktok"){if(price<50){percent=10;fixed=4}else{percent=6;fixed=6}if(state.channelOpts.tiktokShipping)extra+=Math.min(price*.06,50);extra+=price*num(state.channelOpts.tiktokAffiliate)/100}
- if($("#overridePct").value!=="")percent=num($("#overridePct").value);fixed+=num($("#overrideFixed").value);
- return{percent:percent,fixed:fixed,extra:extra,total:price*percent/100+fixed+extra}
+ else if(ch==="tiktok"){
+   if(price<50){percent=10;fixed=4}else{percent=6;fixed=6}
+   if(state.channelOpts.tiktokShipping)extraFixed=FX.number(FX.Decimal.min(FX.norm(price).times("0.06"),FX.norm(50)));
+   extraPercent=num(state.channelOpts.tiktokAffiliate);
+ }
+ if($("#overridePct").value!==""){percent=num($("#overridePct").value);extraPercent=0}
+ fixed=FX.number(FX.norm(fixed).plus(num($("#overrideFixed").value)));
+ var total=FX.number(FX.norm(price).times(FX.norm(percent).plus(extraPercent)).div(100).plus(fixed).plus(extraFixed));
+ var extra=FX.number(FX.norm(price).times(extraPercent).div(100).plus(extraFixed));
+ return{percent:percent,fixed:fixed,extraPercent:extraPercent,extraFixed:extraFixed,extra:extra,total:total}
 }
 function resultAt(price,ch){
- var c=costs(),f=fee(price,ch),tx=tax(),taxv=price*tx.rate/100+tx.fixed,los=price*loss()/100,ad=cac(),profit=price-c.total-f.total-taxv-los-ad;
- return{price:price,c:c,f:f,taxv:taxv,loss:los,ads:ad,profit:profit,received:price-f.total-taxv-los-ad,margin:price?profit/price*100:0,markup:c.total?(price/c.total-1)*100:0}
+ var c=costs(),f=fee(price,ch),tx=tax(),ad=cac();
+ var rr=FX.sellerResult({
+   price:price,cost:c.total,feePct:f.percent,feeFixed:f.fixed,extraPct:f.extraPercent,extraFixed:f.extraFixed,
+   taxPct:tx.rate,taxFixed:tx.fixed,lossPct:loss(),cac:ad
+ });
+ return{
+  price:FX.number(rr.price),c:c,f:f,taxv:FX.number(rr.tax),loss:FX.number(rr.loss),ads:FX.number(rr.cac),
+  profit:FX.number(rr.profit),received:FX.number(rr.received),margin:FX.number(rr.marginPct),markup:FX.number(rr.markupPct)
+ }
 }
 function channelBreakpoints(ch){
  if(ch==="shopee")return[0,8,80,100,200];
@@ -283,41 +365,23 @@ function channelBreakpoints(ch){
  if(ch==="tiktok")return[0,50];
  return[0];
 }
-function solveSegment(ch,predicate){
- var bp=channelBreakpoints(ch),MAX_PRICE=10000000,EPS=.0000001,candidates=[];
- function test(x){var r=resultAt(x,ch);return Number.isFinite(x)&&Number.isFinite(r.profit)&&Number.isFinite(r.margin)&&predicate(r)}
- for(var si=0;si<bp.length;si++){
-   var a=bp[si],b=si+1<bp.length?bp[si+1]:null;
-   if(test(a)){candidates.push(a);continue}
-   if(b!==null){
-     var right=Math.max(a,b-EPS);
-     if(!test(right))continue;
-     var lo=a,hi=right;
-     for(var j=0;j<100;j++){var mid=(lo+hi)/2;if(test(mid))hi=mid;else lo=mid}
-     candidates.push(hi);
-   }else{
-     var lo=a,hi=Math.max(a+1,costs().total+20),guard=0;
-     while(!test(hi)&&guard++<100){hi*=1.7;if(!Number.isFinite(hi)||hi>MAX_PRICE)break}
-     if(!test(hi))continue;
-     for(var k=0;k<110;k++){var mid2=(lo+hi)/2;if(test(mid2))hi=mid2;else lo=mid2}
-     candidates.push(hi);
-   }
- }
- if(!candidates.length)throw new Error("Não existe preço viável com as taxas e metas informadas.");
- var best=Math.min.apply(Math,candidates);
- if(!Number.isFinite(best)||best<0||best>MAX_PRICE)throw new Error("Preço calculado fora do limite de segurança.");
- return best;
-}
 function priceFor(target,ch){
- target=Math.max(0,num(target));
- return solveSegment(ch,function(r){return r.profit+1e-9>=target});
+ var t=Math.max(0,num(target));
+ return FX.number(FX.solveSegments({
+   segments:channelBreakpoints(ch),target:t,initialHigh:costs().total+t+20,currencyStep:"0.01",
+   metric:function(p){return resultAt(p,ch).profit}
+ }));
 }
 function priceForMargin(targetPct,ch){
- var target=Math.max(0,Math.min(95,num(targetPct)));
- return solveSegment(ch,function(r){return r.margin+1e-9>=target});
+ var t=Math.max(0,Math.min(95,num(targetPct)));
+ return FX.number(FX.solveSegments({
+   segments:channelBreakpoints(ch),target:t,initialHigh:costs().total*3+20,currencyStep:"0.01",
+   metric:function(p){return resultAt(p,ch).margin}
+ }));
 }
 function suggested(){
- var c=costs(),p=$("#suggestProfile").value,m=p==="economic"?1.7:p==="strong"?4.5:2.8,f=p==="economic"?5:p==="strong"?20:10,h=p==="economic"?1.5:p==="strong"?4:2.5;return Math.max(f,c.total*m,c.hoursPerUnit*h)
+ var c=costs(),p=$("#suggestProfile").value,m=p==="economic"?"1.7":p==="strong"?"4.5":"2.8",f=p==="economic"?5:p==="strong"?20:10,h=p==="economic"?"1.5":p==="strong"?"4":"2.5";
+ return Math.max(f,FX.number(FX.norm(c.total).times(m)),FX.number(FX.norm(c.hoursPerUnit).times(h)))
 }
 function target(){
  if(state.priceMode==="suggest")return suggested();
@@ -402,7 +466,7 @@ function calc(){
  var ref=c.slicerRef!==null?("<div style='margin-top:8px'><b>Conferência com o fatiador:</b> "+brl(c.slicerRef)+" de custo de material informado × nosso filamento "+brl(c.filament)+" → diferença <b>"+brl(c.filament-c.slicerRef)+"</b>.</div>"):"";
  $("#auditCalc").innerHTML="<b>Auditoria do custo por produto final</b>"+det+
  "<div style='margin-top:8px'>Filamento usado no cálculo: <b>"+brl(cg)+"/g</b>. Energia: <b>"+brl(er.rate)+"/kWh</b>. Manutenção: <b>"+brl(num($("#maintenanceHour").value))+"/h</b>.</div>"+ref+
- "<div class='muted' style='margin-top:7px'>Importante: o “Custo” do Bambu Studio é referência de FILAMENTO do perfil; ele não inclui nossa energia, manutenção, embalagem, taxa do marketplace nem lucro.</div>";
+ "<div class='muted' style='margin-top:7px'>Motor: <b>Decimal.js · 40 dígitos de precisão</b>. Nenhum subtotal financeiro é arredondado no meio da conta; o Real é arredondado apenas na exibição. O “Custo” do Bambu Studio é referência de filamento e não inclui energia, manutenção, embalagem, marketplace nem lucro.</div>";
  $("#scenarioChannel").textContent="Cenários em "+channels.find(function(x){return x[0]===state.channel})[1];
  var sc=[["Equilíbrio",0],["+ R$ 5",5],["+ R$ 10",10],["+ R$ 20",20],["+ R$ 30",30]];
  $("#priceChoices").innerHTML=sc.map(function(x){return '<button class="choice" data-scenario="'+x[1]+'"><div class="lab">'+x[0]+'</div><div class="price">'+brl(priceFor(x[1],state.channel))+"</div></button>"}).join("");
@@ -415,33 +479,52 @@ function calc(){
  }
 }
 function showMode(){["suggest","profit","margin","markup"].forEach(function(m){$("#"+m+"Box").classList.toggle("hidden",state.priceMode!==m)})}
-function updateDistributorOptions(){
+function updateDistributorOptions(preferredProviderKey){
  var uf=$("#stateSelect").value||"",city=$("#citySelect").value||"",sel=$("#distributorSelect");
  if(!sel)return;
  var list=providersByState[uf]||[];
  sel.innerHTML='<option value="">Selecione sua distribuidora</option>'+list.map(function(x,i){
-   return '<option value="'+i+'">'+x.name+(x.manual?" · informar manualmente":"")+"</option>";
+   return '<option value="'+i+'" data-key="'+escHtmlAttr(x.aneelKey||x.q||x.name)+'">'+x.name+(x.manual?" · informar manualmente":"")+"</option>";
  }).join("");
+ if(preferredProviderKey&&city){
+   var wanted=normKey(preferredProviderKey),ix=list.findIndex(function(x){return normKey(x.aneelKey||x.q||x.name)===wanted});
+   if(ix>=0){sel.value=String(ix);fetchAneelTariff(list[ix]);}
+ }
  $("#energyRefHint").textContent=city?"Escolha a distribuidora que aparece na sua conta. A tarifa vem do snapshot oficial da ANEEL hospedado junto com o site.":"Selecione estado, cidade e distribuidora para carregar a referência.";
  calc()
 }
-async function cities(uf){
- var c=$("#citySelect");c.innerHTML="<option>Carregando...</option>";
+async function cities(uf,preferredCity,preferredProviderKey){
+ var c=$("#citySelect");
+ if(!uf){c.innerHTML='<option value="">Selecione o estado primeiro</option>';$("#distributorSelect").innerHTML='<option value="">Selecione a cidade primeiro</option>';calc();return}
+ c.innerHTML="<option>Carregando...</option>";
  try{
    var res=await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados/"+uf+"/municipios"),arr=await res.json();
    c.innerHTML='<option value="">Selecione a cidade</option>'+arr.map(function(x){return "<option>"+x.nome+"</option>"}).join("");
+   if(preferredCity&&arr.some(function(x){return x.nome===preferredCity}))c.value=preferredCity;
  }catch(e){c.innerHTML='<option value="">Cidade indisponível</option>'}
- updateDistributorOptions()
+ updateDistributorOptions(preferredProviderKey)
 }
-function stateInit(){
- var s=$("#stateSelect");
+async function stateInit(){
+ var s=$("#stateSelect"),pref=loadDefaults();
  s.innerHTML='<option value="">Selecione o estado</option>'+ufs.map(function(x){return "<option>"+x+"</option>"}).join("");
- s.value="";
+ s.value=pref&&pref.uf?pref.uf:"";
  $("#citySelect").innerHTML='<option value="">Selecione o estado primeiro</option>';
  $("#distributorSelect").innerHTML='<option value="">Selecione a cidade primeiro</option>';
  $("#energyRefHint").textContent="Selecione estado, cidade e distribuidora. Nenhuma tarifa é assumida automaticamente.";
+ if(pref&&pref.uf)await cities(pref.uf,pref.city||"",pref.providerKey||"");
+ updateDefaultsStatus(pref);
 }
-
+function applySavedDefaults(){
+ var pref=loadDefaults();if(!pref){updateDefaultsStatus(null);return}
+ if(pref.selectedFilament&&presets.filaments.some(function(x){return x.id===pref.selectedFilament}))state.selectedFilament=pref.selectedFilament;
+ if(pref.selectedPrinter&&presets.printers.some(function(x){return x.id===pref.selectedPrinter}))state.selectedPrinter=pref.selectedPrinter;
+ if(["bill","reference","manual"].indexOf(pref.energyMode)>=0)state.energyMode=pref.energyMode;
+ renderSelects();
+ $$(".energyMode").forEach(function(b){b.classList.toggle("active",b.dataset.energy===state.energyMode)});
+ $("#energyBill").classList.toggle("hidden",state.energyMode!=="bill");
+ $("#energyReference").classList.toggle("hidden",state.energyMode!=="reference");
+ $("#energyManual").classList.toggle("hidden",state.energyMode!=="manual");
+}
 function editor(kind){
  var key=kind==="filament"?"filaments":kind==="printer"?"printers":kind==="packaging"?"packaging":"supplies",host=$("#"+kind+"Editor"),arr=presets[key];host.innerHTML="";
  arr.forEach(function(x,i){
@@ -458,7 +541,7 @@ function editor(kind){
 function init(){
  var lossEl=$("#lossReserve");if(lossEl)lossEl.value="0";
  var failureEl=$("#failurePreset");if(failureEl)failureEl.value="0";
- renderPieces();renderSelects();renderMarkets();stateInit();
+ renderPieces();renderSelects();renderMarkets();applySavedDefaults();stateInit();
  document.querySelectorAll('input[type="number"]').forEach(function(el){el.setAttribute("inputmode","decimal")});
  document.addEventListener("focusin",function(e){if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))document.body.classList.add("typing")});
  document.addEventListener("focusout",function(){setTimeout(function(){if(!document.activeElement||!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))document.body.classList.remove("typing")},80)});
@@ -473,11 +556,13 @@ function init(){
  $("#addPackagingPreset").onclick=function(){presets.packaging.push({id:id(),name:"Nova embalagem",unit:0});save();editor("packaging");renderSelects()};
  $("#addSupplyPreset").onclick=function(){presets.supplies.push({id:id(),name:"Novo insumo",unit:0});save();editor("supply");renderSelects()};
  $$(".energyMode").forEach(function(b){b.onclick=function(){state.energyMode=b.dataset.energy;$$(".energyMode").forEach(function(x){x.classList.toggle("active",x===b)});$("#energyBill").classList.toggle("hidden",state.energyMode!=="bill");$("#energyReference").classList.toggle("hidden",state.energyMode!=="reference");$("#energyManual").classList.toggle("hidden",state.energyMode!=="manual");calc()}});
- $("#stateSelect").onchange=function(){cities(this.value)};$("#citySelect").onchange=updateDistributorOptions;$("#distributorSelect").onchange=function(){var list=providersByState[$("#stateSelect").value]||[],p=list[+this.value];fetchAneelTariff(p)};
+ $("#stateSelect").onchange=function(){cities(this.value)};$("#citySelect").onchange=function(){updateDistributorOptions()};$("#distributorSelect").onchange=function(){var list=providersByState[$("#stateSelect").value]||[],p=list[+this.value];fetchAneelTariff(p)};
  $("#failurePreset").onchange=function(){$("#failureCustomWrap").classList.toggle("hidden",this.value!=="custom");calc()};$("#postProcess").onchange=function(){$("#postCustom").classList.toggle("hidden",this.value!=="custom");calc()};$("#lossReserve").onchange=function(){$("#lossCustom").classList.toggle("hidden",this.value!=="custom");calc()};
  $("#taxProfile").onchange=function(){$("#simplesBox").classList.toggle("hidden",this.value.indexOf("simples")!==0);calc()};$("#meiAllocate").onchange=function(){$("#meiOrdersWrap").classList.toggle("hidden",!this.checked);calc()};$("#adsOn").onchange=function(){$("#adsBox").classList.toggle("hidden",!this.checked);calc()};
  $$("[data-price-mode]").forEach(function(b){b.onclick=function(){state.priceMode=b.dataset.priceMode;$$("[data-price-mode]").forEach(function(x){x.classList.toggle("active",x===b)});showMode();calc()}});
  ["material","printerWatts","maintenanceHour","billValue","billKwh","manualKwh","sellerFreight","postCustom","rbt12","manualTaxRate","meiOrders","adsSpend","adsOrders","lossCustom","suggestProfile","targetProfit","targetMargin","targetMarkup","overridePct","overrideFixed"].forEach(function(i){var el=$("#"+i);if(el){el.oninput=calc;if(el.tagName==="SELECT")el.onchange=calc}});
+ var saveDef=$("#saveDefaultsBtn");if(saveDef)saveDef.onclick=function(){saveDefaults();calc()};
+ var clearDef=$("#clearDefaultsBtn");if(clearDef)clearDef.onclick=function(){clearDefaults()};
  $("#resetBtn").onclick=function(){
  state=freshCalcState();
  $("#projectName").value="";
@@ -485,7 +570,7 @@ function init(){
  $("#overridePct").value="";
  $("#failurePreset").value="0";$("#postProcess").value="0";$("#lossReserve").value="0";$("#taxProfile").value="none";
  $("#adsOn").checked=false;$("#meiAllocate").checked=false;
- renderPieces();renderSelects();renderMarkets();stateInit();showMode();calc();
+ renderPieces();renderSelects();renderMarkets();applySavedDefaults();stateInit();showMode();calc();
 };
  $("#exportBtn").onclick=function(){var blob=new Blob([JSON.stringify(presets,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="precifica3d-presets.json";a.click();URL.revokeObjectURL(a.href)};
  $("#importBtn").onclick=function(){$("#importFile").click()};$("#importFile").onchange=async function(e){try{var x=JSON.parse(await e.target.files[0].text());presets=Object.assign(clone(def),x);save();renderSelects();calc();alert("Presets importados.")}catch(err){alert("Arquivo inválido.")}};

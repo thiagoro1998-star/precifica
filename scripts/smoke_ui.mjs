@@ -5,6 +5,8 @@ process.on("uncaughtException",(err)=>{console.error(err);process.exit(1)});
 process.on("unhandledRejection",(err)=>{console.error(err);process.exit(1)});
 
 const html=fs.readFileSync("index.html","utf8")
+  .replace(/<script[^>]*src="\.\/vendor\/decimal\.js[^"]*"[^>]*><\/script>/,"")
+  .replace(/<script[^>]*src="\.\/finance-engine\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/app\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/market\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/consignment-math\.js[^"]*"[^>]*><\/script>/,"")
@@ -13,6 +15,8 @@ const html=fs.readFileSync("index.html","utf8")
   .replace(/<script[^>]*src="\.\/ui\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/manual-calc\.js[^"]*"[^>]*><\/script>/,"")
   .replace(/<script[^>]*src="\.\/shell\.js[^"]*"[^>]*><\/script>/,"");
+const decimal=fs.readFileSync("vendor/decimal.js","utf8");
+const finance=fs.readFileSync("finance-engine.js","utf8");
 const app=fs.readFileSync("app.js","utf8");
 const market=fs.readFileSync("market.js","utf8");
 const consMath=fs.readFileSync("consignment-math.js","utf8");
@@ -44,6 +48,8 @@ window.alert=()=>{};
 window.confirm=()=>true;
 window.HTMLElement.prototype.scrollIntoView=()=>{};
 
+window.eval(decimal);
+window.eval(finance);
 window.eval(app);
 window.eval(market);
 window.eval(consMath);
@@ -60,6 +66,16 @@ const qa=(s)=>[...window.document.querySelectorAll(s)];
 function assert(cond,msg){if(!cond)throw new Error(msg)}
 
 console.log("SMOKE: after init wait");
+// Every fresh visitor must hit the access screen first.
+assert(q("#accountModal").classList.contains("show"),"login-first gate must open on fresh session");
+assert(q("#accountModal").classList.contains("locked"),"fresh login gate should be locked until an access option is chosen");
+assert(qa("[data-auth-tab]").length===2,"login/create access tabs missing");
+assert(q("#localLoginForm")&&q("#localSignupForm"),"functional local auth forms missing");
+q("#guestLogin").click();
+await new Promise(r=>setTimeout(r,5));
+assert(!q("#accountModal").classList.contains("show"),"guest access did not release the app");
+
+console.log("SMOKE: auth gate ok");
 // Workspace navigation: professional dashboard + all calculators remain isolated.
 assert(q(".side-nav"),"left workspace navigation missing");
 assert(qa("[data-workspace-tab]").length===5,"expected 5 workspace tabs");
@@ -114,6 +130,11 @@ q("#distributorSelect").value="0";q("#distributorSelect").dispatchEvent(new wind
 await new Promise(r=>setTimeout(r,20));
 assert(Number((q("#distributorSelect").selectedOptions[0]?.dataset.rate)||0)>0,"explicit ANEEL tariff selection did not load");
 assert(q("#kwhSource").textContent.includes("ANEEL"),"energy source not marked as ANEEL");
+q("#saveDefaultsBtn").click();
+const savedDefaults=JSON.parse(window.localStorage.getItem("precifica3d-defaults-v1")||"null");
+assert(savedDefaults&&savedDefaults.selectedFilament==="pla65","filament default was not saved");
+assert(savedDefaults.selectedPrinter==="a1","printer default was not saved");
+assert(savedDefaults.uf==="SP"&&savedDefaults.city==="Praia Grande","energy location defaults were not saved");
 
 const weight=q('[data-p="weight"]');
 const hours=q('[data-p="hours"]');
@@ -137,6 +158,7 @@ assert(q("#costBreakdown").children.length>=7,"cost breakdown not rendered");
 assert(q("#feeBreakdown").children.length>=6,"fee breakdown not rendered");
 assert(q("#compareBody").children.length===7,"marketplace dashboard disappeared after calculation");
 assert(q("#priceChoices").children.length===5,"quick scenarios must appear only after confirmed calculation");
+assert(q("#auditCalc").textContent.includes("Decimal.js"),"calculation audit must identify Decimal precision engine");
 const confirmedCost=q("#resCost").textContent;
 weight.value="70";weight.dispatchEvent(new window.Event("input",{bubbles:true}));
 await new Promise(r=>setTimeout(r,10));
@@ -210,6 +232,10 @@ assert(q("#consScenarioBody").children.length===16,"scenario simulator should ha
 
 // Store ledger: create point, calculate its margin, then manage sales and receivables.
 window.PrecificaConsignmentOps.setArea("new");
+assert(qa('.store-quick[data-store-field="storeQty"]').length===4,"new-point quantity buttons missing");
+assert(qa('.store-quick[data-store-field="storeCommission"]').length===4,"new-point commission buttons missing");
+qa('.store-quick[data-store-field="storeQty"]').find(x=>x.dataset.storeValue==="10").click();
+assert(q("#storeQty").value==="10","new-point quick quantity did not apply");
 q("#storeName").value="Loja Teste";
 q("#storeAddress").value="Rua Centro, 100";
 q("#storeProduct").value="Chaveiro";
@@ -221,13 +247,17 @@ q("#storeSettlement").value="quinzenal";
 q("#previewStoreTerms").click();
 assert(q("#storePreviewRepasse").textContent.includes("7,00"),"store unit payout preview wrong");
 assert(q("#storePreviewProfit").textContent.includes("5,00"),"store unit profit preview wrong");
-assert(q("#storePreviewMargin").textContent.includes("71,4"),"store margin preview wrong");
+assert(q("#storePreviewMargin").textContent.includes("50,0"),"store net margin preview wrong");
 q("#addConsStore").click();
 await new Promise(r=>setTimeout(r,10));
 assert(!q('[data-cons-area-panel="manage"]').classList.contains("hidden"),"adding a point should open management");
 assert(q("#consDashPoints").textContent==="1","store dashboard did not count the new point");
 assert(q("#detailStock").textContent.includes("10"),"initial consigned stock wrong");
-assert(q("#detailUnitMargin").textContent.includes("71,4"),"managed point margin wrong");
+assert(q("#detailUnitMargin").textContent.includes("50,0"),"managed point net margin wrong");
+window.PrecificaConsignmentOps.setArea("dashboard");
+assert(q("#consDashStockCost").textContent.includes("20,00"),"dashboard consigned stock cost wrong");
+assert(q("#consDashPotential").textContent.includes("100,00"),"dashboard retail potential wrong");
+window.PrecificaConsignmentOps.setArea("manage");
 q("#movementSaleQty").value="3";q("#registerStoreSale").click();
 await new Promise(r=>setTimeout(r,10));
 assert(q("#detailStock").textContent.includes("7"),"stock did not fall after sale");
@@ -286,14 +316,13 @@ assert(window.document.body.dataset.workspace==="catalog","saving from Radar sho
 assert(!q("#catalogSection").classList.contains("workspace-hidden"),"catalog section stayed hidden after save");
 
 console.log("SMOKE: radar/catalog ok");
-// Professional shell / account preview must exist without pretending auth is connected.
-assert(q("#accountModal"),"account preview modal missing");
+// Account screen remains available from inside the app after session entry.
+assert(q("#accountModal"),"account modal missing");
 q("#openAccount").click();
-assert(q("#accountModal").classList.contains("show"),"account modal did not open");
-assert(qa("[data-auth-tab]").length===2,"login/create-account tabs missing");
-assert(q("#saveLocalProfile"),"local profile fallback missing");
+assert(q("#accountModal").classList.contains("show"),"account modal did not reopen");
+assert(q("#guestLogin"),"guest fallback missing");
 q("#closeAccount").click();
-assert(!q("#accountModal").classList.contains("show"),"account modal did not close");
+assert(!q("#accountModal").classList.contains("show"),"authenticated account modal did not close");
 
 console.log("UI smoke verification: OK");
 window.close();

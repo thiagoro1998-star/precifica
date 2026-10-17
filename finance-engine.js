@@ -149,7 +149,18 @@
       candidates.push(hi);
     }
     if(!candidates.length)throw new Error("Não existe preço viável com as taxas e metas atuais.");
-    return candidates.reduce(function(a,x){return x.lt(a)?x:a},candidates[0]);
+    var best=candidates.reduce(function(a,x){return x.lt(a)?x:a},candidates[0]);
+    // Preço de venda é uma moeda executável. Quando currencyStep é informado,
+    // subimos para o próximo centavo e garantimos que a meta continue satisfeita.
+    if(opts.currencyStep){
+      var step=nonneg(opts.currencyStep);
+      if(step.gt(0)){
+        best=best.div(step).ceil().times(step);
+        var guard=0;
+        while(!ok(best)&&guard++<20)best=best.plus(step);
+      }
+    }
+    return best;
   }
   return{
     Decimal:Decimal,norm:norm,number:number,fixed:fixed,cents:cents,rate:rate,safeDiv:safeDiv,sum:sum,

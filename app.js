@@ -1,5 +1,5 @@
 
-var $=function(s){return document.querySelector(s)}, $=function(s){return Array.from(document.querySelectorAll(s))};
+var $=function(s){return document.querySelector(s)}, $$=function(s){return Array.from(document.querySelectorAll(s))};
 var FX=window.PrecificaFinance;
 if(!FX)throw new Error("Motor financeiro de precisão não carregado.");
 var PREF_KEY="precifica3d-defaults-v1";

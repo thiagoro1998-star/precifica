@@ -9,10 +9,10 @@
 <meta http-equiv="Expires" content="0">
 <title>Precifica 3D</title>
 <meta name="description" content="Calculadora profissional de precificação para impressão 3D">
-<link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.15.0">
-<link rel="stylesheet" href="./style.css?v=1.15.0">
-<link rel="stylesheet" href="./pro-ui.css?v=1.15.0">
-<link rel="stylesheet" href="./operations.css?v=1.15.0">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.16.0">
+<link rel="stylesheet" href="./style.css?v=1.16.0">
+<link rel="stylesheet" href="./pro-ui.css?v=1.16.0">
+<link rel="stylesheet" href="./operations.css?v=1.16.0">
 </head>
 <body>
 <div class="app">
@@ -156,6 +156,10 @@
           <div id="energyManual" class="hidden"><label>R$/kWh</label><input class="input" id="manualKwh" type="number" min="0" step="0.01" value="0"></div>
           <div class="stats" style="margin-top:12px"><div class="stat a"><div class="k">Valor usado</div><div class="v" id="kwhUsed">R$ 0,00/kWh</div></div><div class="stat"><div class="k">Origem</div><div class="v" style="font-size:13px" id="kwhSource">Carregando tarifa…</div></div><div class="stat"><div class="k">Energia do projeto</div><div class="v" id="energyCost">R$ 0,00</div></div></div>
         </div>
+        <div class="box saved-defaults-box" style="margin-top:12px">
+          <div class="saved-defaults-copy"><b>Meus padrões</b><span id="savedDefaultsStatus">Nenhum padrão pessoal salvo.</span><small>Salva apenas filamento, impressora e energia. Peso, tempo, quantidade, margem e taxas do cálculo continuam zerados a cada novo cálculo.</small></div>
+          <div class="inline"><button class="btn primary" id="saveDefaultsBtn" type="button">Salvar como meu padrão</button><button class="btn" id="clearDefaultsBtn" type="button">Remover padrão</button></div>
+        </div>
       </div>
     </section>
 
@@ -271,6 +275,8 @@
           <div class="cons-dashboard-kpis">
             <div class="cons-dashboard-kpi"><span>Pontos ativos</span><b id="consDashPoints">0</b><small>Lojas com consignação aberta</small></div>
             <div class="cons-dashboard-kpi"><span>Peças em exposição</span><b id="consDashPieces">0</b><small>Estoque que está fora com parceiros</small></div>
+            <div class="cons-dashboard-kpi"><span>Custo parado</span><b id="consDashStockCost">R$ 0,00</b><small>Seu custo nas peças ainda expostas</small></div>
+            <div class="cons-dashboard-kpi"><span>Potencial no varejo</span><b id="consDashPotential">R$ 0,00</b><small>Preço público das peças ainda expostas</small></div>
             <div class="cons-dashboard-kpi attention"><span>Valor a receber</span><b id="consDashDue">R$ 0,00</b><small id="consDashOwing">0</small><em> ponto(s) devendo</em></div>
             <div class="cons-dashboard-kpi good"><span>Já recebido</span><b id="consDashReceived">R$ 0,00</b><small id="consDashPaid">0</small><em> ponto(s) quitados</em></div>
           </div>
@@ -292,10 +298,10 @@
               <div class="f s6"><label>Nome do ponto / loja</label><input class="input" id="storeName" placeholder="Ex.: Loja Centro"></div>
               <div class="f s6"><label>Endereço</label><input class="input" id="storeAddress" placeholder="Rua, número, bairro, cidade"></div>
               <div class="f s6"><label>Produto / referência</label><input class="input" id="storeProduct" placeholder="Ex.: Chaveiro articulado"></div>
-              <div class="f s3"><label>Peças deixadas</label><input class="input" id="storeQty" type="number" min="0" step="1" value="0"></div>
-              <div class="f s3"><label>Preço ao público</label><input class="input" id="storePrice" type="number" min="0" step="0.01" value="0"></div>
-              <div class="f s3"><label>Comissão da loja (%)</label><input class="input" id="storeCommission" type="number" min="0" max="99" step="0.1" value="0"></div>
-              <div class="f s3"><label>Acerto</label><select id="storeSettlement"><option value="">Selecione</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="sob demanda">Sob demanda</option></select></div>
+              <div class="f s3"><label>Peças deixadas</label><input class="input" id="storeQty" type="number" min="0" step="1" value="0"><div class="quick-options compact"><button type="button" class="quick-chip store-quick" data-store-field="storeQty" data-store-value="10">10</button><button type="button" class="quick-chip store-quick" data-store-field="storeQty" data-store-value="20">20</button><button type="button" class="quick-chip store-quick" data-store-field="storeQty" data-store-value="30">30</button><button type="button" class="quick-chip store-quick" data-store-field="storeQty" data-store-value="50">50</button></div></div>
+              <div class="f s3"><label>Preço ao público</label><input class="input" id="storePrice" type="number" min="0" step="0.01" value="0"><div class="quick-options compact"><button type="button" class="quick-chip store-quick" data-store-field="storePrice" data-store-value="5.90">5,90</button><button type="button" class="quick-chip store-quick" data-store-field="storePrice" data-store-value="7.90">7,90</button><button type="button" class="quick-chip store-quick" data-store-field="storePrice" data-store-value="9.90">9,90</button><button type="button" class="quick-chip store-quick" data-store-field="storePrice" data-store-value="12.90">12,90</button></div></div>
+              <div class="f s3"><label>Margem/comissão do lojista (%)</label><input class="input" id="storeCommission" type="number" min="0" max="99" step="0.1" value="0"><div class="quick-options compact"><button type="button" class="quick-chip store-quick" data-store-field="storeCommission" data-store-value="20">20%</button><button type="button" class="quick-chip store-quick" data-store-field="storeCommission" data-store-value="30">30%</button><button type="button" class="quick-chip store-quick" data-store-field="storeCommission" data-store-value="40">40%</button><button type="button" class="quick-chip store-quick" data-store-field="storeCommission" data-store-value="50">50%</button></div></div>
+              <div class="f s3"><label>Acerto</label><select id="storeSettlement"><option value="">Selecione</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="sob demanda">Sob demanda</option></select><div class="quick-options compact"><button type="button" class="quick-chip store-quick" data-store-field="storeSettlement" data-store-value="semanal">7d</button><button type="button" class="quick-chip store-quick" data-store-field="storeSettlement" data-store-value="quinzenal">15d</button><button type="button" class="quick-chip store-quick" data-store-field="storeSettlement" data-store-value="mensal">30d</button></div></div>
               <div class="f s6"><label>Custo da peça</label><div class="cons-inline-field"><input class="input" id="storeCost" type="number" min="0" step="0.01" value="0"><button class="btn" id="importStoreCost" type="button">Usar custo da Precificação</button></div></div>
             </div>
             <div class="cons-point-preview pending" id="storeMarginPreview">
@@ -582,7 +588,7 @@
     </main>
   </div>
   
-  <div class="footer">Precifica 3D · motor 1.15.0 · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+  <div class="footer">Precifica 3D · motor 1.16.0 · Decimal · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
 </div>
 
 <div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>
@@ -590,8 +596,8 @@
 <div class="modal" id="packagingModal"><div class="modalBox"><div class="modalHead"><h3>Catálogo de embalagens</h3><button class="icon" data-close>✕</button></div><div id="packagingEditor"></div><button class="btn primary" id="addPackagingPreset">+ Nova embalagem</button></div></div>
 <div class="modal" id="supplyModal"><div class="modalBox"><div class="modalHead"><h3>Catálogo de insumos</h3><button class="icon" data-close>✕</button></div><div id="supplyEditor"></div><button class="btn primary" id="addSupplyPreset">+ Novo insumo</button></div></div>
 
-<div class="auth-modal" id="accountModal" aria-hidden="true">
-  <div class="auth-shell">
+<div class="auth-modal auth-gate" id="accountModal" aria-hidden="false">
+  <div class="auth-shell auth-shell-gate">
     <section class="auth-brand-pane">
       <div class="auth-brand-lockup">
         <div class="brand-mark" aria-hidden="true">
@@ -599,65 +605,64 @@
         </div>
         <h2>Precifica <span>3D</span></h2>
       </div>
-      <h3>Seu negócio 3D começa pelos números certos.</h3>
-      <p>Uma interface feita para makers acompanharem custo, preço, margem, mercado e negociação sem depender de planilhas espalhadas.</p>
-      <div class="auth-points">
-        <div class="auth-point"><i>✓</i>Motor de precificação determinístico</div>
-        <div class="auth-point"><i>✓</i>Comparativo por marketplace</div>
-        <div class="auth-point"><i>✓</i>Consignação e atacado</div>
-        <div class="auth-point"><i>✓</i>Catálogo de rentabilidade</div>
+      <span class="auth-superline">PRECIFICAÇÃO • MARKETPLACES • CONSIGNAÇÃO</span>
+      <h3>Transforme horas de impressão em preço, margem e lucro que fazem sentido.</h3>
+      <p>O Precifica 3D organiza os custos da sua peça, compara canais de venda, simula consignação e mantém o histórico da sua operação em um painel pensado para quem realmente imprime e vende.</p>
+      <div class="auth-points auth-points-rich">
+        <div class="auth-point"><i>✓</i><span><b>Motor financeiro de alta precisão</b><small>Decimal.js com 40 dígitos e sem arredondamentos intermediários.</small></span></div>
+        <div class="auth-point"><i>✓</i><span><b>Custos reais de produção</b><small>Filamento, energia, manutenção, embalagem, taxas e perdas.</small></span></div>
+        <div class="auth-point"><i>✓</i><span><b>Consignação operacional</b><small>Pontos, peças expostas, vendas, recebimentos e margem por parceiro.</small></span></div>
+        <div class="auth-point"><i>✓</i><span><b>Seu padrão fica salvo</b><small>Filamento, impressora e energia podem ser reaproveitados sem contaminar um novo cálculo.</small></span></div>
       </div>
+      <div class="auth-trust-row"><span>Motor Decimal 40 dígitos</span><span>Dados locais no navegador</span><span>Responsivo</span></div>
     </section>
     <section class="auth-form-pane">
-      <button class="auth-close" id="closeAccount" aria-label="Fechar">✕</button>
+      <button class="auth-close" id="closeAccount" aria-label="Fechar" title="Voltar ao painel">✕</button>
+      <div class="auth-form-heading"><span>ACESSO AO PAINEL</span><h3>Entre no Precifica 3D</h3><p>Seu acesso atual é local neste dispositivo. A sincronização em nuvem será conectada depois sem mudar sua forma de usar o painel.</p></div>
       <div class="auth-tabs">
         <button class="active" data-auth-tab="login">Entrar</button>
-        <button data-auth-tab="signup">Criar conta</button>
+        <button data-auth-tab="signup">Criar acesso</button>
       </div>
 
       <div class="auth-panel" data-auth-panel="login">
-        <h3>Bem-vindo de volta</h3>
-        <p>Interface preparada para a futura sincronização em nuvem.</p>
-        <form class="cloud-auth-form">
-          <label>E-mail</label><input class="input" type="email" autocomplete="email" placeholder="seu@email.com">
-          <label>Senha</label><input class="input" type="password" autocomplete="current-password" placeholder="••••••••">
-          <button class="btn primary auth-primary" type="submit">Entrar</button>
+        <form id="localLoginForm">
+          <label>E-mail</label><input class="input" id="loginEmail" type="email" autocomplete="email" placeholder="seu@email.com" required>
+          <label>Senha</label><input class="input" id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" required>
+          <button class="btn primary auth-primary" type="submit">Entrar no painel</button>
         </form>
+        <div class="auth-login-hint" id="loginHint">Se este é seu primeiro acesso neste navegador, crie um acesso local.</div>
       </div>
 
       <div class="auth-panel hidden" data-auth-panel="signup">
-        <h3>Crie seu espaço</h3>
-        <p>O cadastro em nuvem será conectado em uma etapa própria de backend.</p>
-        <form class="cloud-auth-form">
-          <label>Nome</label><input class="input" autocomplete="name" placeholder="Seu nome">
-          <label>E-mail</label><input class="input" type="email" autocomplete="email" placeholder="seu@email.com">
-          <label>Senha</label><input class="input" type="password" autocomplete="new-password" placeholder="Crie uma senha forte">
-          <button class="btn primary auth-primary" type="submit">Criar conta</button>
+        <form id="localSignupForm">
+          <label>Seu nome</label><input class="input" id="signupName" autocomplete="name" placeholder="Como quer aparecer no painel" required>
+          <label>E-mail</label><input class="input" id="signupEmail" type="email" autocomplete="email" placeholder="seu@email.com" required>
+          <label>Senha</label><input class="input" id="signupPassword" type="password" minlength="6" autocomplete="new-password" placeholder="Mínimo de 6 caracteres" required>
+          <button class="btn primary auth-primary" type="submit">Criar acesso local</button>
         </form>
       </div>
 
-      <div class="auth-divider">OU USE AGORA SEM NUVEM</div>
-      <div class="local-profile-box">
-        <b>Perfil local neste dispositivo</b>
-        <p>Não salva senha e não envia dados. Serve apenas para personalizar o painel enquanto o backend de autenticação não está conectado.</p>
-        <div class="local-profile-grid">
-          <input class="input" id="localProfileName" placeholder="Nome de exibição">
-          <input class="input" id="localProfileEmail" type="email" placeholder="E-mail (opcional)">
-        </div>
-        <button class="btn auth-primary" id="saveLocalProfile" type="button">Usar perfil local</button>
+      <div class="auth-saved-user hidden" id="savedUserCard">
+        <div><span>PERFIL ENCONTRADO</span><b id="savedUserName">Maker</b><small id="savedUserEmail"></small></div>
+        <button class="btn" id="useSavedUser" type="button">Continuar com este perfil</button>
       </div>
-      <div class="auth-note">Segurança primeiro: nenhum formulário de senha desta prévia é enviado ou armazenado.</div>
+
+      <div class="auth-divider">OU</div>
+      <button class="btn auth-guest" id="guestLogin" type="button">Entrar como visitante neste dispositivo</button>
+      <div class="auth-note"><b>Importante:</b> este login é local e não é uma conta em nuvem. A senha é armazenada apenas como hash no navegador; nenhum dado é enviado para servidor nesta versão.</div>
     </section>
   </div>
 </div>
 <div class="shell-toast" id="shellToast"></div>
 
-<script src="./app.js?v=1.15.0"></script>
-<script src="./market.js?v=1.15.0"></script>
-<script src="./consignment-math.js?v=1.15.0"></script>
-<script src="./consignment.js?v=1.15.0"></script>
-<script src="./consignment-ops.js?v=1.15.0"></script>
-<script src="./ui.js?v=1.15.0"></script>
-<script src="./manual-calc.js?v=1.15.0"></script>
-<script src="./shell.js?v=1.15.0"></script>
+<script src="./vendor/decimal.js?v=1.16.0"></script>
+<script src="./finance-engine.js?v=1.16.0"></script>
+<script src="./app.js?v=1.16.0"></script>
+<script src="./market.js?v=1.16.0"></script>
+<script src="./consignment-math.js?v=1.16.0"></script>
+<script src="./consignment.js?v=1.16.0"></script>
+<script src="./consignment-ops.js?v=1.16.0"></script>
+<script src="./ui.js?v=1.16.0"></script>
+<script src="./manual-calc.js?v=1.16.0"></script>
+<script src="./shell.js?v=1.16.0"></script>
 </body></html>

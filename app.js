@@ -147,7 +147,7 @@ async function fetchAneelTariff(provider){
 function erate(){
  if(state.energyMode==="bill"){
    var v=num($("#billValue").value),k=num($("#billKwh").value);
-   return k>0?{rate:v/k,source:"pela sua conta · valor total ÷ kWh"}:{rate:0,source:"preencha valor e kWh da conta"};
+   return k>0?{rate:FX.number(FX.norm(v).div(k)),source:"pela sua conta · valor total ÷ kWh"}:{rate:0,source:"preencha valor e kWh da conta"};
  }
  if(state.energyMode==="manual"){
    var m=num($("#manualKwh").value);
@@ -300,15 +300,20 @@ function costs(){
  return{filament:p.filament,energy:p.energy,maintenance:p.maintenance,packaging:FX.number(packD),supplies:FX.number(supD),freight:FX.number(frD),post:FX.number(postD),
  total:FX.number(totalD),projectEnergy:FX.number(projectEnergyD),hoursPerUnit:p.hoursPerUnit,slicerRef:p.slicerRef,productionDetails:p.details}
 }
-function simples(rbt,industry){if(rbt<=0)return 0;var a=industry?[[180000,.045,0],[360000,.078,5940],[720000,.10,13860],[1800000,.112,22500],[3600000,.147,85500],[4800000,.30,720000]]:[[180000,.04,0],[360000,.073,5940],[720000,.095,13860],[1800000,.107,22500],[3600000,.143,87300],[4800000,.19,378000]];var row=a.find(function(x){return rbt<=x[0]})||a[a.length-1];return Math.max(0,(rbt*row[1]-row[2])/rbt*100)}
+function simples(rbt,industry){
+ if(rbt<=0)return 0;
+ var a=industry?[[180000,"0.045",0],[360000,"0.078",5940],[720000,"0.10",13860],[1800000,"0.112",22500],[3600000,"0.147",85500],[4800000,"0.30",720000]]:[[180000,"0.04",0],[360000,"0.073",5940],[720000,"0.095",13860],[1800000,"0.107",22500],[3600000,"0.143",87300],[4800000,"0.19",378000]];
+ var row=a.find(function(x){return rbt<=x[0]})||a[a.length-1],r=FX.norm(rbt);
+ return FX.number(FX.Decimal.max(FX.norm(0),r.times(row[1]).minus(row[2]).div(r).times(100)))
+}
 function tax(){
  var p=$("#taxProfile").value,rate=num($("#manualTaxRate").value),fixed=0,note="Manual / 0%";
  if(p==="simplesCommerce"||p==="simplesIndustry"){rate=simples(num($("#rbt12").value),p==="simplesIndustry");note="Simples calculado por RBT12"}
- if(p.indexOf("mei")===0){var monthly=p==="meiService"?86.05:p==="meiBoth"?87.05:82.05;if($("#meiAllocate").checked)fixed=monthly/Math.max(1,num($("#meiOrders").value));note="MEI: "+brl(monthly)+"/mês"+(fixed?" · "+brl(fixed)+"/pedido rateado":"")}
+ if(p.indexOf("mei")===0){var monthly=p==="meiService"?86.05:p==="meiBoth"?87.05:82.05;if($("#meiAllocate").checked)fixed=FX.number(FX.norm(monthly).div(Math.max(1,num($("#meiOrders").value))));note="MEI: "+brl(monthly)+"/mês"+(fixed?" · "+brl(fixed)+"/pedido rateado":"")}
  if(p==="cpf"&&num($("#manualTaxRate").value)===0){rate=0;note="CPF: sem alíquota automática"}
  return{rate:rate,fixed:fixed,note:note}
 }
-function cac(){return $("#adsOn").checked&&num($("#adsOrders").value)>0?num($("#adsSpend").value)/num($("#adsOrders").value):0}
+function cac(){return $("#adsOn").checked&&num($("#adsOrders").value)>0?FX.number(FX.norm($("#adsSpend").value).div($("#adsOrders").value)):0}
 function loss(){return $("#lossReserve").value==="custom"?num($("#lossCustom").value):num($("#lossReserve").value)}
 function shopee(price){
  var oct=Date.now()>=new Date("2026-10-01T00:00:00-03:00").getTime();
@@ -375,7 +380,8 @@ function priceForMargin(targetPct,ch){
  }));
 }
 function suggested(){
- var c=costs(),p=$("#suggestProfile").value,m=p==="economic"?1.7:p==="strong"?4.5:2.8,f=p==="economic"?5:p==="strong"?20:10,h=p==="economic"?1.5:p==="strong"?4:2.5;return Math.max(f,c.total*m,c.hoursPerUnit*h)
+ var c=costs(),p=$("#suggestProfile").value,m=p==="economic"?"1.7":p==="strong"?"4.5":"2.8",f=p==="economic"?5:p==="strong"?20:10,h=p==="economic"?"1.5":p==="strong"?"4":"2.5";
+ return Math.max(f,FX.number(FX.norm(c.total).times(m)),FX.number(FX.norm(c.hoursPerUnit).times(h)))
 }
 function target(){
  if(state.priceMode==="suggest")return suggested();

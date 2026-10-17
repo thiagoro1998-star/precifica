@@ -48,7 +48,7 @@ close(c.unitProfit,"4.73");
 const target=FX.norm("15");
 const solved=FX.solveSegments({
   segments:[0,8,80,100,200],target,
-  initialHigh:50,
+  initialHigh:50,currencyStep:"0.01",
   metric(price){
     const px=FX.norm(price);
     let pct,fixed,extra=0;
@@ -70,5 +70,6 @@ const solvedProfit=(()=>{
   return FX.sellerResult({price:px,cost:"12",feePct:pct,feeFixed:fixed,extraPct:extra,extraFixed:0,taxPct:0,taxFixed:0,lossPct:0,cac:0}).profit;
 })();
 assert(solvedProfit.gte(target),"segmented solver did not reach target");
+assert(FX.norm(solved).times(100).isInteger(),"reverse price must be executable to the cent");
 
 console.log("Decimal finance verification: OK");

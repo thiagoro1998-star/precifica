@@ -8,16 +8,17 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Precifica 3D</title>
-<meta name="description" content="Calculadora profissional de precificação para impressão 3D">
+<meta name="description" content="Precifica 3D — precificação, financeiro, estoque de insumos e gestão para impressão 3D">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.16.0">
 <link rel="stylesheet" href="./style.css?v=1.16.0">
 <link rel="stylesheet" href="./pro-ui.css?v=1.16.0">
 <link rel="stylesheet" href="./operations.css?v=1.16.0">
+<link rel="stylesheet" href="./management.css?v=1.18.0">
 </head>
 <body>
 <div class="app">
   <div class="top">
-    <div class="head">
+    <div class="head app-topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 48 48" role="img">
@@ -28,33 +29,62 @@
             <path class="mark-eq" d="M32.4 31.1h2.9M32.4 33.7h2.9"/>
           </svg>
         </div>
-        <div class="brand-copy"><h1>Precifica <span>3D</span></h1><div class="muted">Custo real, preço por canal e lucro líquido.</div></div>
+        <div class="brand-copy"><h1>Precifica <span>3D</span></h1><div class="muted">Gestão para quem imprime e vende.</div></div>
       </div>
-      <div class="actions"><button class="btn" id="exportBtn">Exportar presets</button><button class="btn" id="importBtn">Importar</button><input id="importFile" type="file" accept="application/json" hidden><button class="btn primary" id="resetBtn">Novo cálculo</button></div>
+      <div class="top-context">
+        <span id="topContextEyebrow">VISÃO GERAL</span>
+        <strong id="topContextTitle">Dashboard</strong>
+      </div>
+      <div class="actions top-actions">
+        <button class="btn top-utility" id="exportBtn" title="Exportar presets">Exportar</button>
+        <button class="btn top-utility" id="importBtn" title="Importar presets">Importar</button>
+        <input id="importFile" type="file" accept="application/json" hidden>
+        <button class="btn primary" id="resetBtn">+ Nova precificação</button>
+      </div>
     </div>
   </div>
 
   <div class="workspace">
     <aside class="side-nav" aria-label="Áreas do Precifica">
-      <div class="side-nav-title">MENU</div>
+      <div class="side-brand-mini">
+        <span class="side-brand-dot"></span>
+        <div><b>Workspace</b><small>Operação 3D</small></div>
+      </div>
       <div class="side-tabs" role="tablist" aria-orientation="vertical">
+        <div class="side-nav-section">GESTÃO</div>
         <button class="side-tab active" data-workspace-tab="home" role="tab" aria-selected="true">
-          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9 20v-6h6v6"/></svg></span><span class="side-tab-copy"><strong>Início</strong><small>Visão geral e atalhos</small></span>
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z"/></svg></span>
+          <span class="side-tab-copy"><strong>Dashboard</strong><small>Visão geral da operação</small></span>
         </button>
         <button class="side-tab" data-workspace-tab="calc" role="tab" aria-selected="false">
-          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="M8 8h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg></span><span class="side-tab-copy"><strong>Precificação</strong><small>Projeto, custos e preço</small></span>
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="M8 8h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg></span>
+          <span class="side-tab-copy"><strong>Precificação</strong><small>Custos, canal e margem</small></span>
         </button>
+        <button class="side-tab" data-workspace-tab="finance" role="tab" aria-selected="false">
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v13H4z"/><path d="M4 10h16M8 15h3M15 15h2"/></svg></span>
+          <span class="side-tab-copy"><strong>Financeiro</strong><small>Caixa, contas e DRE</small></span>
+        </button>
+        <button class="side-tab" data-workspace-tab="stock" role="tab" aria-selected="false">
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>
+          <span class="side-tab-copy"><strong>Estoque</strong><small>Insumos e reposição</small></span>
+          <em class="nav-alert-badge hidden" id="stockNavBadge">0</em>
+        </button>
+
+        <div class="side-nav-section analytics">VENDAS E ANÁLISE</div>
         <button class="side-tab" data-workspace-tab="market" role="tab" aria-selected="false">
-          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-8"/><path d="M3 19h18"/></svg></span><span class="side-tab-copy"><strong>Mercado</strong><small>Referências e comparação</small></span>
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-8"/><path d="M3 19h18"/></svg></span>
+          <span class="side-tab-copy"><strong>Mercado</strong><small>Referências e comparação</small></span>
         </button>
         <button class="side-tab" data-workspace-tab="consignment" role="tab" aria-selected="false">
-          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v11H4z"/><path d="M7 7V5h10v2M8 11h8M8 15h5"/></svg></span><span class="side-tab-copy"><strong>Consignação</strong><small>Revenda e comércio local</small></span>
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v11H4z"/><path d="M7 7V5h10v2M8 11h8M8 15h5"/></svg></span>
+          <span class="side-tab-copy"><strong>Consignação</strong><small>Pontos, vendas e repasses</small></span>
         </button>
         <button class="side-tab" data-workspace-tab="catalog" role="tab" aria-selected="false">
-          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12.1V21"/></svg></span><span class="side-tab-copy"><strong>Catálogo</strong><small>Produtos e rentabilidade</small></span>
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12.1V21"/></svg></span>
+          <span class="side-tab-copy"><strong>Catálogo</strong><small>Produtos e rentabilidade</small></span>
         </button>
       </div>
-      <div class="side-nav-help"><span class="status-dot"></span><div><b>Motor ativo</b><small>Custos, taxas e mercado conectados.</small></div></div>
+      <div class="side-nav-help"><span class="status-dot"></span><div><b>Sistema local ativo</b><small>Dados neste navegador.</small></div></div>
       <div class="side-account">
         <div class="side-account-avatar">P3</div>
         <div class="side-account-copy"><b id="profileName">Modo local</b><small id="profileSub">Dados salvos neste navegador</small></div>
@@ -588,7 +618,7 @@
     </main>
   </div>
   
-  <div class="footer">Precifica 3D · motor 1.17.0 · Decimal · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+  <div class="footer">Precifica 3D · versão 1.18.0 · Decimal · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
 </div>
 
 <div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>
@@ -662,7 +692,8 @@
 <script src="./consignment-math.js?v=1.16.0"></script>
 <script src="./consignment.js?v=1.16.0"></script>
 <script src="./consignment-ops.js?v=1.16.0"></script>
-<script src="./ui.js?v=1.17.0"></script>
+<script src="./management.js?v=1.18.0"></script>
+<script src="./ui.js?v=1.18.0"></script>
 <script src="./manual-calc.js?v=1.16.0"></script>
 <script src="./shell.js?v=1.16.0"></script>
 </body></html>

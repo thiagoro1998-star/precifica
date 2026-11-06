@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#151b25">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Precifica 3D</title>
+<meta name="description" content="Calculadora profissional de precificação para impressão 3D">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.16.0">
+<link rel="stylesheet" href="./style.css?v=1.16.0">
+<link rel="stylesheet" href="./pro-ui.css?v=1.16.0">
+<link rel="stylesheet" href="./operations.css?v=1.16.0">
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="head">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="img">
+            <path class="mark-shell" d="M24 3.8 41.6 14v20L24 44.2 6.4 34V14L24 3.8Z"/>
+            <path class="mark-layer mark-layer-1" d="m12 16.2 12-6.9 12 6.9-12 6.9-12-6.9Z"/>
+            <path class="mark-layer mark-layer-2" d="m12 23.7 12 6.9 12-6.9v5.7l-12 6.9-12-6.9v-5.7Z"/>
+            <path class="mark-calc" d="M31.2 28.4h5.3v8.1h-5.3z"/>
+            <path class="mark-eq" d="M32.4 31.1h2.9M32.4 33.7h2.9"/>
+          </svg>
+        </div>
+        <div class="brand-copy"><h1>Precifica <span>3D</span></h1><div class="muted">Custo real, preço por canal e lucro líquido.</div></div>
+      </div>
+      <div class="actions"><button class="btn" id="exportBtn">Exportar presets</button><button class="btn" id="importBtn">Importar</button><input id="importFile" type="file" accept="application/json" hidden><button class="btn primary" id="resetBtn">Novo cálculo</button></div>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <aside class="side-nav" aria-label="Áreas do Precifica">
+      <div class="side-nav-title">MENU</div>
+      <div class="side-tabs" role="tablist" aria-orientation="vertical">
+        <button class="side-tab active" data-workspace-tab="home" role="tab" aria-selected="true">
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9 20v-6h6v6"/></svg></span><span class="side-tab-copy"><strong>Início</strong><small>Visão geral e atalhos</small></span>
+        </button>
+        <button class="side-tab" data-workspace-tab="calc" role="tab" aria-selected="false">
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="M8 8h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg></span><span class="side-tab-copy"><strong>Precificação</strong><small>Projeto, custos e preço</small></span>
+        </button>
+        <button class="side-tab" data-workspace-tab="market" role="tab" aria-selected="false">
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-8"/><path d="M3 19h18"/></svg></span><span class="side-tab-copy"><strong>Mercado</strong><small>Referências e comparação</small></span>
+        </button>
+        <button class="side-tab" data-workspace-tab="consignment" role="tab" aria-selected="false">
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v11H4z"/><path d="M7 7V5h10v2M8 11h8M8 15h5"/></svg></span><span class="side-tab-copy"><strong>Consignação</strong><small>Revenda e comércio local</small></span>
+        </button>
+        <button class="side-tab" data-workspace-tab="catalog" role="tab" aria-selected="false">
+          <span class="side-tab-key" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12.1V21"/></svg></span><span class="side-tab-copy"><strong>Catálogo</strong><small>Produtos e rentabilidade</small></span>
+        </button>
+      </div>
+      <div class="side-nav-help"><span class="status-dot"></span><div><b>Motor ativo</b><small>Custos, taxas e mercado conectados.</small></div></div>
+      <div class="side-account">
+        <div class="side-account-avatar">P3</div>
+        <div class="side-account-copy"><b id="profileName">Modo local</b><small id="profileSub">Dados salvos neste navegador</small></div>
+        <button id="openAccount" aria-label="Abrir conta" title="Conta">•••</button>
+      </div>
+    </aside>
+    <main class="workspace-main">
+      <div class="grid" id="workspaceGrid">
+    <section class="dashboard-view span2" id="homeSection">
+      <div class="dashboard-wrap">
+        <div class="dashboard-hero">
+          <div class="dashboard-kicker">PRECIFICA 3D · WORKSPACE</div>
+          <h2>Decida preço, margem e canal sem trabalhar no escuro.</h2>
+          <p>Seu painel reúne custo de produção, marketplaces, consignação e histórico de rentabilidade em uma experiência única. Os cálculos continuam usando o mesmo motor matemático do Precifica.</p>
+          <div class="dashboard-hero-actions">
+            <button class="btn primary" data-open-workspace="calc">+ Novo cálculo</button>
+            <button class="btn" data-open-workspace="market">Abrir Radar de Mercado</button>
+            <button class="btn" data-open-workspace="consignment">Simular consignação</button>
+          </div>
+          <div class="dashboard-status"><i></i><span>Motor financeiro ativo · dados locais</span></div>
+        </div>
+
+        <div class="dash-kpis">
+          <div class="dash-kpi"><span>Custo atual / un.</span><b id="dashCost">R$ 0,00</b></div>
+          <div class="dash-kpi accent"><span>Preço sugerido</span><b id="dashPrice">R$ 0,00</b></div>
+          <div class="dash-kpi"><span>Lucro líquido / un.</span><b id="dashProfit">R$ 0,00</b></div>
+          <div class="dash-kpi"><span>Margem líquida</span><b id="dashMargin">0%</b></div>
+          <div class="dash-kpi"><span>Produtos salvos</span><b id="dashCatalog">0</b></div>
+          <div class="dash-kpi"><span>Referências de mercado</span><b id="dashRefs">0</b></div>
+        </div>
+
+        <div class="dashboard-group">
+          <div class="dashboard-group-head"><div><h3>Ferramentas principais</h3><span>Entre direto no que precisa fazer agora.</span></div></div>
+          <div class="module-grid">
+            <button class="module-card orange" data-open-workspace="calc"><span class="module-icon">R$</span><b>Precificação 3D</b><small>Custo real, energia, material, taxas e preço por canal.</small><span class="module-arrow">→</span></button>
+            <button class="module-card cyan" data-open-workspace="market"><span class="module-icon">↗</span><b>Radar de Mercado</b><small>Compare suas contas com referências reais que você encontrou.</small><span class="module-arrow">→</span></button>
+            <button class="module-card green" data-open-workspace="consignment"><span class="module-icon">%</span><b>Consignação</b><small>Controle pontos, peças em consignação, recebíveis e simule acordos.</small><span class="module-arrow">→</span></button>
+            <button class="module-card purple" data-open-workspace="catalog"><span class="module-icon">▣</span><b>Catálogo</b><small>Guarde snapshots de custo, preço, margem e lucro por produto.</small><span class="module-arrow">→</span></button>
+          </div>
+        </div>
+
+        <div class="dashboard-group">
+          <div class="dashboard-group-head"><div><h3>Fluxo recomendado</h3><span>Uma sequência simples para tomar decisões melhores.</span></div></div>
+          <div class="workflow-strip">
+            <div class="workflow-step"><strong><i>1</i>Calcule</strong><span>Informe peso, tempo, filamento, energia e custos reais.</span></div>
+            <div class="workflow-step"><strong><i>2</i>Compare</strong><span>Veja o preço necessário nos canais e confronte com o mercado.</span></div>
+            <div class="workflow-step"><strong><i>3</i>Negocie</strong><span>Teste consignação ou atacado sem confundir comissão com margem.</span></div>
+            <div class="workflow-step"><strong><i>4</i>Registre</strong><span>Salve produtos rentáveis no catálogo para construir histórico.</span></div>
+          </div>
+        </div>
+
+        <div class="dashboard-group">
+          <div class="dashboard-group-head"><div><h3>Conta e sincronização</h3><span>Estrutura pronta para a futura camada de monetização.</span></div><button class="btn" id="dashOpenAccount">Ver conta</button></div>
+          <div class="neutral">Hoje os seus presets e históricos continuam salvos neste navegador. A tela de conta foi preparada visualmente para futura autenticação e sincronização em nuvem, sem fingir que já existe uma conta segura onde ainda não há backend conectado.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card span2" id="projectSection">
+      <div class="ch"><div class="num">01</div><div><h2>Projeto e peças</h2><div class="muted">Informe o que o fatiador mostra. Para kits/quebra-cabeças, some os fatiamentos que formam um único produto final.</div></div></div>
+      <div class="cb">
+        <div class="row">
+          <div class="f s6"><label>Nome do projeto <span class="muted">(opcional)</span></label><input class="input" id="projectName" placeholder="Ex.: Kit chaveiro gamer"></div>
+          <div class="f s6"><label>Modo</label><div class="pills"><button class="pill active" data-mode="equal">Peças iguais</button><button class="pill" data-mode="different">Produto com várias partes</button></div></div>
+        </div>
+        <h3 class="title" style="margin-top:16px">Peças do projeto</h3>
+        <div id="pieces"></div>
+        <button class="btn" id="addPiece">+ Adicionar peça</button>
+        <details><summary>Reserva para falhas (avançado)</summary><div class="box"><div class="row"><div class="f s6"><label>Reserva</label><select id="failurePreset"><option value="0">0% — não incluir</option><option value="1">1% — conservadora leve</option><option value="3">3% — moderada</option><option value="5">5% — alta</option><option value="custom">Personalizado</option></select></div><div class="f s6 hidden" id="failureCustomWrap"><label>Percentual personalizado</label><input class="input" id="failureCustom" type="number" min="0" step="0.1" value="0"></div></div><div class="hint">Comece em 0% ou 1%. Use um percentual maior só quando tiver histórico de falhas.</div></div></details>
+      </div>
+    </section>
+
+    <section class="card" id="materialSection">
+      <div class="ch"><div class="num">02</div><div><h2>Material</h2><div class="muted">Filamento e custo por grama.</div></div></div>
+      <div class="cb">
+        <div class="row"><div class="f s6"><label>Preset de filamento</label><select id="filamentPreset"></select></div><div class="f s6"><label>Material</label><select id="material"><option value="">Selecione o material</option><option>PLA</option><option>PETG</option><option>ABS</option><option>ASA</option><option>TPU</option><option>Outro</option></select></div></div>
+        <div class="stats" style="margin-top:13px"><div class="stat"><div class="k">Preço do rolo</div><div class="v" id="filPrice">R$ 0,00</div></div><div class="stat"><div class="k">Peso do rolo</div><div class="v" id="filWeight">0 g</div></div><div class="stat a"><div class="k">Custo por grama</div><div class="v" id="filCostG">R$ 0,000/g</div></div></div>
+        <button class="btn" style="margin-top:12px" data-open="filamentModal">Editar filamentos</button>
+      </div>
+    </section>
+
+    <section class="card" id="printerSection">
+      <div class="ch"><div class="num">03</div><div><h2>Impressora e energia</h2><div class="muted">Consumo, manutenção e custo elétrico.</div></div></div>
+      <div class="cb">
+        <div class="row"><div class="f s6"><label>Impressora</label><select id="printerPreset"></select></div><div class="f s6"><label>Consumo médio usado (W)</label><input class="input" id="printerWatts" type="number" min="0"><div class="hint">Estimativa de impressão; não é potência máxima da fonte.</div></div></div>
+        <div class="row" style="margin-top:10px"><div class="f s6"><label>Reserva de manutenção (R$/h)</label><input class="input" id="maintenanceHour" type="number" min="0" step="0.01"><div class="hint">Premissa para limpeza, lubrificação, álcool, panos, bicos e desgaste.</div></div><div class="f s6"><label>&nbsp;</label><button class="btn" data-open="printerModal">Editar / adicionar impressora</button></div></div>
+        <div class="box" style="margin-top:14px">
+          <h3 class="title">Custo de energia (kWh)</h3>
+          <div class="pills"><button class="pill energyMode" data-energy="bill">Da conta · mais preciso</button><button class="pill energyMode active" data-energy="reference">Estado + cidade + distribuidora</button><button class="pill energyMode" data-energy="manual">Manual</button></div>
+          <div id="energyBill" class="hidden"><div class="row"><div class="f s6"><label>Valor total da conta (R$)</label><input class="input" id="billValue" type="number" min="0" step="0.01" placeholder="Ex.: 210,50"></div><div class="f s6"><label>Consumo da conta (kWh)</label><input class="input" id="billKwh" type="number" min="0" step="0.01" placeholder="Ex.: 220"></div></div></div>
+          <div id="energyReference">
+  <div class="row">
+    <div class="f s6"><label>Estado</label><select id="stateSelect"></select></div>
+    <div class="f s6"><label>Cidade</label><select id="citySelect"><option>Selecione o estado</option></select></div>
+    <div class="f s12"><label>Distribuidora / tarifa residencial B1</label><select id="distributorSelect"><option value="">Selecione a cidade primeiro</option></select></div>
+  </div>
+  <div class="hint" id="energyRefHint">O Precifica só usa tarifa automática quando há referência identificável da distribuidora. Se houver dúvida, use “Da conta”, que é o modo mais preciso.</div>
+</div>
+          <div id="energyManual" class="hidden"><label>R$/kWh</label><input class="input" id="manualKwh" type="number" min="0" step="0.01" value="0"></div>
+          <div class="stats" style="margin-top:12px"><div class="stat a"><div class="k">Valor usado</div><div class="v" id="kwhUsed">R$ 0,00/kWh</div></div><div class="stat"><div class="k">Origem</div><div class="v" style="font-size:13px" id="kwhSource">Carregando tarifa…</div></div><div class="stat"><div class="k">Energia do projeto</div><div class="v" id="energyCost">R$ 0,00</div></div></div>
+        </div>
+        <div class="box saved-defaults-box" style="margin-top:12px">
+          <div class="saved-defaults-copy"><b>Meus padrões</b><span id="savedDefaultsStatus">Nenhum padrão pessoal salvo.</span><small>Salva apenas filamento, impressora e energia. Peso, tempo, quantidade, margem e taxas do cálculo continuam zerados a cada novo cálculo.</small></div>
+          <div class="inline"><button class="btn primary" id="saveDefaultsBtn" type="button">Salvar como meu padrão</button><button class="btn" id="clearDefaultsBtn" type="button">Remover padrão</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card span2" id="finalSection">
+      <div class="ch"><div class="num">04</div><div><h2>Produto final</h2><div class="muted">Embalagens, insumos, acabamento e frete.</div></div></div>
+      <div class="cb">
+        <div class="grid">
+          <div class="box"><h3 class="title">Embalagens</h3><div class="items" id="packagingRows"></div><div class="inline"><button class="btn" id="addPackaging">+ Adicionar embalagem</button><button class="btn" data-open="packagingModal">Editar catálogo</button></div><div class="hint">O editor possui calculadora de lote: valor pago ÷ quantidade comprada.</div></div>
+          <div class="box"><h3 class="title">Insumos e acabamento</h3><div class="items" id="supplyRows"></div><div class="inline"><button class="btn" id="addSupply">+ Adicionar insumo</button><button class="btn" data-open="supplyModal">Editar catálogo</button></div></div>
+          <div class="box"><h3 class="title">Frete pago por você</h3><label>Valor por unidade</label><input class="input" id="sellerFreight" type="number" min="0" step="0.01" value="0"></div>
+          <div class="box"><h3 class="title">Pós-processamento</h3><select id="postProcess"><option value="0">Sai pronta · R$ 0</option><option value="0.5">Montagem rápida · R$ 0,50</option><option value="2">Lixamento/acabamento · R$ 2,00</option><option value="5">Pintura · R$ 5,00</option><option value="custom">Personalizado</option></select><input class="input hidden" id="postCustom" type="number" min="0" step="0.01" placeholder="Custo por unidade" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="taxSection">
+      <div class="ch"><div class="num">05</div><div><h2>Impostos e caixa</h2><div class="muted">CPF, MEI, Simples e outros perfis.</div></div></div>
+      <div class="cb">
+        <label>Perfil fiscal</label>
+        <select id="taxProfile"><option value="none">Não sei / não incluir</option><option value="cpf">Pessoa Física (CPF)</option><option value="meiCommerce">MEI — Comércio/Indústria</option><option value="meiService">MEI — Serviços</option><option value="meiBoth">MEI — Comércio + Serviços</option><option value="simplesCommerce">Simples Nacional — Comércio</option><option value="simplesIndustry">Simples Nacional — Indústria</option><option value="presumed">Lucro Presumido</option><option value="real">Lucro Real</option><option value="other">Outro / personalizado</option></select>
+        <div class="note" id="taxInfo" style="margin-top:10px"></div>
+        <div class="box hidden" id="simplesBox" style="margin-top:12px"><div class="row"><div class="f s6"><label>Faturamento acumulado em 12 meses (RBT12)</label><input class="input" id="rbt12" type="number" min="0" step="100"></div><div class="f s6"><label>Alíquota efetiva calculada</label><input class="input" id="simplesRate" readonly></div></div></div>
+        <details><summary>Opções fiscais avançadas</summary><div class="box"><label>Alíquota manual sobre a venda (%)</label><input class="input" id="manualTaxRate" type="number" min="0" step="0.01" value="0"><label class="check" style="margin-top:10px"><input type="checkbox" id="meiAllocate"> Ratear custo mensal do MEI por pedido</label><div id="meiOrdersWrap" class="hidden" style="margin-top:8px"><label>Pedidos/mês usados no rateio</label><input class="input" id="meiOrders" type="number" min="1" value="0"></div></div></details>
+        <div class="box" style="margin-top:12px"><h3 class="title">Ads / CAC</h3><label class="check"><input type="checkbox" id="adsOn"> Tenho histórico de anúncios</label><div id="adsBox" class="row hidden" style="margin-top:9px"><div class="f s6"><label>Gasto em anúncios</label><input class="input" id="adsSpend" type="number" min="0" step="0.01"></div><div class="f s6"><label>Pedidos atribuídos</label><input class="input" id="adsOrders" type="number" min="1"></div></div><div class="hint" id="cacHint">Sem histórico, CAC = R$ 0.</div></div>
+        <div class="box" style="margin-top:12px"><h3 class="title">Reserva perdas/devoluções</h3><select id="lossReserve"><option value="0" selected>0% — não incluir</option><option value="1">1% — conservadora</option><option value="2">2% — moderada</option><option value="custom">Personalizado</option></select><input class="input hidden" id="lossCustom" type="number" min="0" step="0.1" placeholder="%" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <section class="card" id="pricingSection">
+      <div class="ch"><div class="num">06</div><div><h2>Precificação e canal</h2><div class="muted">Taxas automáticas por padrão.</div></div></div>
+      <div class="cb">
+        <h3 class="title">Canal principal</h3><div class="tabs" id="marketTabs"></div>
+        <div class="note" id="channelInfo"></div><div class="box" id="channelOptions" style="margin-top:10px"></div>
+        <h3 class="title" style="margin-top:15px">Como quer chegar ao preço?</h3><div class="pills"><button class="pill orange active" data-price-mode="suggest">Precifica sugere · INICIANTE</button><button class="pill orange" data-price-mode="profit">Quero R$ de lucro</button><button class="pill orange" data-price-mode="margin">Quero % de margem</button><button class="pill orange" data-price-mode="markup">Quero usar markup</button></div>
+        <div class="box" id="suggestBox"><div class="row"><div class="f s6"><label>Perfil da sugestão</label><select id="suggestProfile"><option value="economic">Econômico</option><option value="balanced" selected>Equilibrado</option><option value="strong">Forte · mais folga</option></select></div><div class="f s6"><label>Meta automática de lucro líquido</label><div class="v big" id="suggestProfit">R$ 0,00</div></div></div><div class="hint">Referência financeira, não pesquisa de concorrentes.</div></div>
+        <div class="box hidden" id="profitBox"><label>Lucro líquido desejado por unidade</label><input class="input" id="targetProfit" type="number" min="0" step="0.01" value="0"></div>
+        <div class="box hidden" id="marginBox"><label>Margem líquida desejada (%)</label><input class="input" id="targetMargin" type="number" min="0" max="95" step="0.1" value="0"></div>
+        <div class="box hidden" id="markupBox"><label>Markup sobre o custo (%)</label><input class="input" id="targetMarkup" type="number" min="0" step="10" value="0"></div>
+        <div class="box" style="margin-top:12px"><h3 class="title">Não sei quanto cobrar</h3><div class="muted" id="scenarioChannel"></div><div class="choices" id="priceChoices" style="margin-top:9px"></div></div>
+        <details><summary>Configuração avançada do canal</summary><div class="box"><div class="row"><div class="f s6"><label>Sobrescrever comissão (%)</label><input class="input" id="overridePct" type="number" step="0.01" placeholder="vazio = automático"></div><div class="f s6"><label>Somar taxa fixa manual (R$)</label><input class="input" id="overrideFixed" type="number" step="0.01" value="0"></div></div></div></details>
+      </div>
+    </section>
+
+    <section class="calc-commit-card span2" id="calcCommitCard">
+      <div class="calc-commit-copy">
+        <span class="calc-commit-kicker">ETAPA FINAL</span>
+        <h2>Pronto para fechar a conta?</h2>
+        <p id="calcCommitStatus">Preencha os dados acima e clique em Calcular para liberar os resultados.</p>
+        <div class="calc-validation-errors hidden" id="calcValidationErrors"></div>
+      </div>
+      <div class="calc-commit-action">
+        <button class="btn primary calc-main-button" id="calculateNowBtn">Calcular preço e resultados</button>
+        <span>O resultado só é confirmado quando você clicar aqui.</span>
+      </div>
+    </section>
+
+    <section class="card span2" id="resultSection">
+      <div class="ch"><div class="num">07</div><div><h2>Resultado</h2><div class="muted">Custos, descontos, lucro e comparativo entre canais.</div></div></div>
+      <div class="calc-pending-state">
+        <div class="calc-pending-icon">=</div>
+        <div><b>Resultado aguardando cálculo</b><span>Os números ficam bloqueados enquanto houver alterações não recalculadas.</span></div>
+        <button class="btn primary" type="button" onclick="window.PrecificaManualCalc&&window.PrecificaManualCalc.calculate()">Calcular agora</button>
+      </div>
+      <div class="cb">
+        <div class="stats"><div class="stat"><div class="k">Custo completo / unidade</div><div class="v" id="resCost">R$ 0,00</div></div><div class="stat a"><div class="k">Preço sugerido</div><div class="v" id="resPrice">R$ 0,00</div></div><div class="stat"><div class="k">Recebimento líquido</div><div class="v" id="resReceived">R$ 0,00</div></div><div class="stat"><div class="k">Lucro líquido</div><div class="v good" id="resProfit">R$ 0,00</div></div><div class="stat"><div class="k">Margem líquida</div><div class="v" id="resMargin">0%</div></div><div class="stat"><div class="k">Markup efetivo</div><div class="v" id="resMarkup">0%</div></div></div>
+        <div class="grid" style="margin-top:14px"><div class="box"><h3 class="title">Quebra de custos</h3><div id="costBreakdown"></div></div><div class="box"><h3 class="title">Quebra de descontos</h3><div id="feeBreakdown"></div></div></div>
+<div class="neutral" id="auditCalc" style="margin-top:12px"></div>
+        <h3 class="title" style="margin-top:17px">Comparativo por canal — mesma meta de lucro</h3>
+        <div class="table"><table><thead><tr><th>Canal</th><th>Preço necessário</th><th>Taxas</th><th>Recebimento</th><th>Lucro</th><th>Margem</th><th>Precisão</th></tr></thead><tbody id="compareBody"></tbody></table></div>
+        <div class="muted" style="margin-top:12px">Regras principais: Mercado Livre — Universidade de Vendedores; Amazon Brasil — tabela oficial por categoria; TikTok Shop Seller University. Shopee e algumas condições Magalu aparecem como referência quando a grade pública não é única/estável.</div>
+      </div>
+    </section>
+
+    <section class="card span2" id="marketSection">
+      <div class="ch"><div class="num">08</div><div><h2>Radar de Mercado</h2><div class="muted">Compare seu custo real com anúncios reais — sem preço inventado e sem “IA chutando”.</div></div></div>
+      <div class="cb">
+        <div class="note"><b>O que este módulo faz:</b> usa referências que você realmente observou no mercado, registra fonte + data e cruza esses preços com o mesmo motor de custos e taxas do Precifica. Preço anunciado, frete, faturamento e lucro ficam separados.</div>
+        <div class="market-summary-grid" style="margin-top:13px">
+          <div class="stat"><div class="k">Referências válidas</div><div class="v" id="marketCount">0</div></div>
+          <div class="stat a"><div class="k">Preço mediano</div><div class="v" id="marketMedian">—</div></div>
+          <div class="stat"><div class="k">Menor → maior</div><div class="v" id="marketRange">—</div></div>
+          <div class="stat"><div class="k">Preço médio</div><div class="v" id="marketAverage">—</div></div>
+        </div>
+        <div id="marketMath" class="box" style="margin-top:13px"></div>
+        <div class="box" style="margin-top:13px">
+          <div class="market-section-head"><div><h3 class="title">Referências reais</h3><div class="hint">Use vários anúncios semelhantes. Uma referência isolada não representa o mercado.</div></div><div class="inline"><button class="btn" id="marketAddRef">+ Adicionar referência</button><button class="btn" id="marketClear">Limpar</button></div></div>
+          <div id="marketRefs" style="margin-top:10px"></div>
+        </div>
+        <div class="box" style="margin-top:13px"><h3 class="title">Distribuição observada</h3><div id="marketDetail"></div></div>
+        <div class="market-actions"><button class="btn primary" id="marketSaveProduct">Salvar cálculo no meu catálogo</button><button class="btn" id="marketExport">Exportar dados de negócio</button></div>
+        <div class="neutral" style="margin-top:12px"><b>Nosso diferencial:</b> em vez de comparar só “meu anúncio x 1 concorrente”, o Radar trabalha com uma amostra, mostra mediana e quartis e depois calcula quanto realmente sobraria para você em cada preço. IA pode entrar depois para interpretação, mas a base matemática continua auditável.</div>
+      </div>
+    </section>
+
+    <section class="card span2 cons-ops-section" id="consignmentSection">
+      <div class="ch"><div class="num">09</div><div><h2>Consignação</h2><div class="muted">Controle pontos, estoque externo, valores a receber, pagamentos e simulações.</div></div></div>
+      <div class="cb">
+        <div id="consFlash" class="cons-flash"></div>
+
+        <div class="cons-area-tabs" role="tablist" aria-label="Áreas de consignação">
+          <button class="cons-area-tab active" data-cons-area="dashboard"><span class="cons-area-icon">▦</span><span><b>Dashboard</b><small>Visão geral</small></span></button>
+          <button class="cons-area-tab" data-cons-area="new"><span class="cons-area-icon">＋</span><span><b>Cadastrar ponto</b><small>Nova consignação</small></span></button>
+          <button class="cons-area-tab" data-cons-area="manage"><span class="cons-area-icon">⌂</span><span><b>Gerir pontos</b><small>Estoque e acertos</small></span></button>
+          <button class="cons-area-tab" data-cons-area="simulator"><span class="cons-area-icon">%</span><span><b>Simulador</b><small>Testar condições</small></span></button>
+        </div>
+
+        <div class="cons-area-panel" data-cons-area-panel="dashboard">
+          <div class="cons-ops-hero">
+            <div><span class="cons-eyebrow">OPERAÇÃO</span><h3>O que está fora da sua bancada agora</h3><p>Veja quantas peças estão em lojas, quanto precisa receber e quais pontos já acertaram.</p></div>
+            <button class="btn primary" data-cons-area="new" type="button">+ Novo ponto</button>
+          </div>
+
+          <div class="cons-dashboard-kpis">
+            <div class="cons-dashboard-kpi"><span>Pontos ativos</span><b id="consDashPoints">0</b><small>Lojas com consignação aberta</small></div>
+            <div class="cons-dashboard-kpi"><span>Peças em exposição</span><b id="consDashPieces">0</b><small>Estoque que está fora com parceiros</small></div>
+            <div class="cons-dashboard-kpi"><span>Custo parado</span><b id="consDashStockCost">R$ 0,00</b><small>Seu custo nas peças ainda expostas</small></div>
+            <div class="cons-dashboard-kpi"><span>Potencial no varejo</span><b id="consDashPotential">R$ 0,00</b><small>Preço público das peças ainda expostas</small></div>
+            <div class="cons-dashboard-kpi attention"><span>Valor a receber</span><b id="consDashDue">R$ 0,00</b><small id="consDashOwing">0</small><em> ponto(s) devendo</em></div>
+            <div class="cons-dashboard-kpi good"><span>Já recebido</span><b id="consDashReceived">R$ 0,00</b><small id="consDashPaid">0</small><em> ponto(s) quitados</em></div>
+          </div>
+
+          <div class="cons-receivable-alert" id="consReceivableAlert">Cadastre seus pontos para o painel começar a acompanhar recebíveis.</div>
+
+          <div class="box cons-dashboard-table">
+            <div class="cons-panel-head"><div><h3 class="title">Resumo por ponto</h3><div class="hint">Estoque atual, vendas e situação financeira de cada parceiro.</div></div><button class="btn" data-cons-area="manage" type="button">Gerenciar pontos</button></div>
+            <div class="table"><table><thead><tr><th>Ponto</th><th>Em exposição</th><th>Vendidas</th><th>Repasse gerado</th><th>Lojista</th><th>Sua margem líquida</th><th>A receber</th><th>Recebido</th><th>Status</th><th></th></tr></thead><tbody id="consStoresSummary"></tbody></table></div>
+          </div>
+        </div>
+
+        <div class="cons-area-panel hidden" data-cons-area-panel="new">
+          <div class="cons-panel-head cons-stores-title">
+            <div><span class="cons-eyebrow">NOVO PONTO</span><h3 class="title">Cadastrar ponto de consignação</h3><div class="hint">Cadastre a loja, endereço, estoque inicial e as condições comerciais. Nenhum valor é presumido.</div></div>
+          </div>
+          <div class="box cons-store-form">
+            <div class="row">
+              <div class="f s6"><label>Nome do ponto / loja</label><input class="input" id="storeName" placeholder="Ex.: Loja Centro"></div>
+              <div class="f s6"><label>Endereço</label><input class="input" id="storeAddress" placeholder="Rua, número, bairro, cidade"></div>
+              <div class="f s6"><label>Produto / referência</label><input class="input" id="storeProduct" placeholder="Ex.: Chaveiro articulado"></div>
+              <div class="f s3"><label>Peças deixadas</label><input class="input" id="storeQty" type="number" min="0" step="1" value="0"><div class="quick-options compact"><button type="button" class="quick-chip store-quick" data-store-field="storeQty" data-store-value="10">10</button><button type="button" class="quick-chip store-quick" data-store-field="storeQty" data-store-value="20">20</button><button type="button" class="quick-chip store-quick" data-store-field="storeQty" data-store-value="30">30</button><button type="button" class="quick-chip store-quick" data-store-field="storeQty" data-store-value="50">50</button></div></div>
+              <div class="f s3"><label>Preço ao público</label><input class="input" id="storePrice" type="number" min="0" step="0.01" value="0"><div class="quick-options compact"><button type="button" class="quick-chip store-quick" data-store-field="storePrice" data-store-value="5.90">5,90</button><button type="button" class="quick-chip store-quick" data-store-field="storePrice" data-store-value="7.90">7,90</button><button type="button" class="quick-chip store-quick" data-store-field="storePrice" data-store-value="9.90">9,90</button><button type="button" class="quick-chip store-quick" data-store-field="storePrice" data-store-value="12.90">12,90</button></div></div>
+              <div class="f s3"><label>Margem/comissão do lojista (%)</label><input class="input" id="storeCommission" type="number" min="0" max="99" step="0.1" value="0"><div class="quick-options compact"><button type="button" class="quick-chip store-quick" data-store-field="storeCommission" data-store-value="20">20%</button><button type="button" class="quick-chip store-quick" data-store-field="storeCommission" data-store-value="30">30%</button><button type="button" class="quick-chip store-quick" data-store-field="storeCommission" data-store-value="40">40%</button><button type="button" class="quick-chip store-quick" data-store-field="storeCommission" data-store-value="50">50%</button></div></div>
+              <div class="f s3"><label>Acerto</label><select id="storeSettlement"><option value="">Selecione</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="sob demanda">Sob demanda</option></select><div class="quick-options compact"><button type="button" class="quick-chip store-quick" data-store-field="storeSettlement" data-store-value="semanal">7d</button><button type="button" class="quick-chip store-quick" data-store-field="storeSettlement" data-store-value="quinzenal">15d</button><button type="button" class="quick-chip store-quick" data-store-field="storeSettlement" data-store-value="mensal">30d</button></div></div>
+              <div class="f s6"><label>Custo da peça</label><div class="cons-inline-field"><input class="input" id="storeCost" type="number" min="0" step="0.01" value="0"><button class="btn" id="importStoreCost" type="button">Usar custo da Precificação</button></div></div>
+            </div>
+            <div class="cons-point-preview pending" id="storeMarginPreview">
+              <div><span>Repasse por unidade</span><b id="storePreviewRepasse">R$ 0,00</b></div>
+              <div><span>Lucro estimado / un.</span><b id="storePreviewProfit">R$ 0,00</b></div>
+              <div><span>Sua margem líquida</span><b id="storePreviewMargin">0%</b></div>
+              <p id="storePreviewStatus">Preencha os dados e clique em Calcular condição.</p>
+            </div>
+            <div class="inline cons-new-actions">
+              <button class="btn" id="previewStoreTerms" type="button">Calcular condição do ponto</button>
+              <button class="btn primary cons-add-store" id="addConsStore" type="button">+ Adicionar ponto de consignação</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="cons-area-panel hidden" data-cons-area-panel="manage">
+          <div class="cons-panel-head cons-stores-title"><div><span class="cons-eyebrow">GESTÃO</span><h3 class="title">Gerir lojas e parceiros</h3><div class="hint">Acompanhe estoque, vendas, margem, valores a receber, pagamentos, devoluções e reposições.</div></div></div>
+
+          <div class="cons-store-list-wrap">
+            <div class="cons-panel-head"><div><h3 class="title">Pontos cadastrados</h3><div class="hint">Escolha um ponto para abrir a operação completa.</div></div><button class="btn" data-cons-area="new" type="button">+ Cadastrar outro ponto</button></div>
+            <div class="cons-store-cards" id="consStoreCards"></div>
+          </div>
+
+          <div class="cons-store-detail-empty" id="consStoreDetailEmpty">
+            <b>Selecione um ponto para gerenciar</b><span>Você poderá registrar vendas, recebimentos, devoluções e reposições sem editar números escondidos.</span>
+          </div>
+
+          <div class="cons-store-detail hidden" id="consStoreDetail">
+            <div class="cons-store-detail-head">
+              <div><span class="cons-eyebrow">PONTO SELECIONADO</span><h3 id="detailStoreName">—</h3><p><span id="detailStoreAddress">—</span> · <span id="detailStoreProduct">—</span></p></div>
+              <span class="cons-status active" id="detailStoreStatus">Ativo</span>
+            </div>
+
+            <div class="cons-detail-kpis">
+              <div><span>Em exposição</span><b id="detailStock">0 un.</b></div>
+              <div><span>Vendidas</span><b id="detailSold">0 un.</b></div>
+              <div class="attention"><span>A receber</span><b id="detailDue">R$ 0,00</b></div>
+              <div class="good"><span>Recebido</span><b id="detailPaid">R$ 0,00</b></div>
+            </div>
+
+            <div class="cons-finance-line cons-finance-five">
+              <div><span>Venda bruta registrada</span><b id="detailGross">R$ 0,00</b></div>
+              <div><span>Parte da loja</span><b id="detailStoreShare">R$ 0,00</b></div>
+              <div><span>Seu repasse gerado</span><b id="detailProducerShare">R$ 0,00</b></div>
+              <div><span>Sua margem líquida</span><b id="detailUnitMargin">—</b></div>
+              <div><span>Condições</span><b id="detailTerms">—</b></div>
+            </div>
+
+            <div class="cons-movement-grid">
+              <div class="cons-action-card"><span>VENDA</span><label>Quantas peças venderam?</label><input class="input" id="movementSaleQty" type="number" min="1" step="1" placeholder="1"><button class="btn primary" id="registerStoreSale" type="button">Registrar venda</button></div>
+              <div class="cons-action-card"><span>PAGAMENTO</span><label>Quanto você recebeu?</label><input class="input" id="movementPayment" type="number" min="0" step="0.01" placeholder="0,00"><button class="btn primary" id="registerStorePayment" type="button">Registrar pagamento</button></div>
+              <div class="cons-action-card"><span>DEVOLUÇÃO</span><label>Quantas peças voltaram?</label><input class="input" id="movementReturnQty" type="number" min="1" step="1" placeholder="1"><button class="btn" id="registerStoreReturn" type="button">Registrar devolução</button></div>
+              <div class="cons-action-card"><span>REPOSIÇÃO</span><label>Quantas peças vai adicionar?</label><input class="input" id="movementRestockQty" type="number" min="1" step="1" placeholder="10"><button class="btn" id="registerStoreRestock" type="button">Adicionar peças</button></div>
+            </div>
+
+            <div class="cons-detail-columns">
+              <div class="box">
+                <div class="cons-panel-head"><div><h3 class="title">Condições do ponto</h3><div class="hint">Preço, comissão e endereço só mudam depois de clicar em Salvar alterações.</div></div></div>
+                <div class="row">
+                  <div class="f s4"><label>Preço ao público</label><input class="input" id="editStorePrice" type="number" min="0" step="0.01"></div>
+                  <div class="f s4"><label>Comissão (%)</label><input class="input" id="editStoreCommission" type="number" min="0" max="99" step="0.1"></div>
+                  <div class="f s4"><label>Endereço</label><input class="input" id="editStoreAddress"></div>
+                </div>
+                <div class="inline" style="margin-top:10px"><button class="btn" id="saveStoreTerms" type="button">Salvar alterações</button><button class="btn primary" id="settleStore" type="button">Marcar saldo como pago</button><button class="btn" id="archiveStore" type="button">Encerrar ponto</button></div>
+              </div>
+              <div class="box">
+                <div class="cons-panel-head"><div><h3 class="title">Últimas movimentações</h3><div class="hint">Registro local para conferir tudo o que foi lançado.</div></div></div>
+                <div id="storeMovementList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cons-area-panel hidden cons-simulator-panel" data-cons-area-panel="simulator" id="consSimulatorPanel">
+          <div class="cons-simulator-intro"><div><span class="cons-eyebrow">SIMULADOR</span><h3>Teste uma condição antes de fechar com a loja</h3><p>Escolha os valores, depois clique em Calcular simulação. Os resultados somem sempre que houver uma alteração pendente.</p></div></div>
+<div class="cons-topbar">
+          <div>
+            <div class="cons-label">TIPO DE VENDA</div>
+            <div class="pills">
+              <button class="pill orange active" data-cons-mode="consignment">Consignação</button>
+              <button class="pill orange" data-cons-mode="resale">Revenda / Atacado</button>
+            </div>
+          </div>
+          <div>
+            <div class="cons-label">NÍVEL DE DETALHE</div>
+            <div class="pills cons-ui-switch">
+              <button class="pill active" data-cons-ui="simple">Simples</button>
+              <button class="pill" data-cons-ui="full">Completo</button>
+            </div>
+          </div>
+          <div class="inline cons-actions"><button class="btn" id="consSave">Salvar cenário</button><button class="btn" id="consClear">Limpar</button></div>
+        </div>
+
+        <div class="cons-beginner-note">
+          <div class="cons-beginner-icon">1</div>
+          <div><b>Comece pelo custo da peça</b><span>Você pode puxar o custo da Precificação ou digitar manualmente.</span></div>
+        </div>
+
+        <div class="box cons-cost-import">
+          <div><label>Custo completo por unidade</label><input class="input" id="consCost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Ex.: 1,50"><div class="hint" id="consCostOrigin">Valor manual</div></div>
+          <div><label>&nbsp;</label><button class="btn primary" id="useCalculatedCost">Usar custo calculado</button><div class="hint">Importa o custo unitário da aba Precificação e continua editável.</div></div>
+        </div>
+
+        <div class="cons-sim-calcbar">
+          <div><b>Confirme a simulação</b><span id="consSimStatus">Preencha as condições e clique em Calcular simulação.</span></div>
+          <button class="btn primary" id="consCalculateNow">Calcular simulação</button>
+        </div>
+
+        <div id="consignmentMode">
+          <div class="cons-simple-only">
+            <div class="box cons-quick" style="margin-top:12px">
+              <div class="cons-quick-head">
+                <div><h3 class="title">Configuração rápida</h3><div class="hint">Clique nas opções. Você não precisa digitar tudo.</div></div>
+                <button class="btn" id="starterPreset">Usar exemplo: R$ 7,90 · 30% · 20 un.</button>
+              </div>
+
+              <div class="cons-steps">
+                <div class="cons-step">
+                  <div class="cons-step-num">2</div>
+                  <div><label>Preço ao público</label><div class="quick-options" data-quick-group="salePrice">
+                    <button class="quick-chip" data-quick-key="salePrice" data-quick-value="5.90">R$ 5,90</button>
+                    <button class="quick-chip" data-quick-key="salePrice" data-quick-value="7.90">R$ 7,90</button>
+                    <button class="quick-chip" data-quick-key="salePrice" data-quick-value="9.90">R$ 9,90</button>
+                    <button class="quick-chip" data-quick-key="salePrice" data-quick-value="12.90">R$ 12,90</button>
+                  </div></div>
+                </div>
+
+                <div class="cons-step">
+                  <div class="cons-step-num">3</div>
+                  <div><label>Comissão da loja</label><div class="quick-options" data-quick-group="commissionPct">
+                    <button class="quick-chip" data-quick-key="commissionPct" data-quick-value="20">20%</button>
+                    <button class="quick-chip" data-quick-key="commissionPct" data-quick-value="30">30%</button>
+                    <button class="quick-chip" data-quick-key="commissionPct" data-quick-value="40">40%</button>
+                    <button class="quick-chip" data-quick-key="commissionPct" data-quick-value="50">50%</button>
+                  </div></div>
+                </div>
+
+                <div class="cons-step">
+                  <div class="cons-step-num">4</div>
+                  <div><label>Quantidade que vai deixar</label><div class="quick-options" data-quick-group="deliveredQty">
+                    <button class="quick-chip" data-quick-key="deliveredQty" data-quick-value="10">10 un.</button>
+                    <button class="quick-chip" data-quick-key="deliveredQty" data-quick-value="20">20 un.</button>
+                    <button class="quick-chip" data-quick-key="deliveredQty" data-quick-value="30">30 un.</button>
+                    <button class="quick-chip" data-quick-key="deliveredQty" data-quick-value="50">50 un.</button>
+                  </div></div>
+                </div>
+
+                <div class="cons-step">
+                  <div class="cons-step-num">5</div>
+                  <div><label>Lucro que você quer por unidade</label><div class="quick-options" data-quick-group="desiredProfit">
+                    <button class="quick-chip" data-quick-key="desiredProfit" data-quick-value="2">R$ 2</button>
+                    <button class="quick-chip" data-quick-key="desiredProfit" data-quick-value="4">R$ 4</button>
+                    <button class="quick-chip" data-quick-key="desiredProfit" data-quick-value="5">R$ 5</button>
+                    <button class="quick-chip" data-quick-key="desiredProfit" data-quick-value="6">R$ 6</button>
+                  </div></div>
+                </div>
+
+                <div class="cons-step">
+                  <div class="cons-step-num">6</div>
+                  <div><label>Quando a loja faz o acerto</label><div class="quick-options" data-quick-group="settlement">
+                    <button class="quick-chip" data-quick-key="settlement" data-quick-value="semanal">Semanal</button>
+                    <button class="quick-chip" data-quick-key="settlement" data-quick-value="quinzenal">Quinzenal</button>
+                    <button class="quick-chip" data-quick-key="settlement" data-quick-value="mensal">Mensal</button>
+                  </div></div>
+                </div>
+              </div>
+
+              <div id="quickConsResults" class="quick-result-strip"></div>
+              <button class="btn cons-open-full" id="openFullConsignment">Quero ajustar taxas, margem, vendidos e outras opções</button>
+            </div>
+          </div>
+
+          <div class="cons-full-only">
+            <div class="cons-grid" style="margin-top:12px">
+              <div class="box">
+                <h3 class="title">Condições com a loja</h3>
+                <div class="row">
+                  <div class="f s6"><label>Preço ao público</label><input class="input" id="consSalePrice" type="number" min="0" step="0.01"></div>
+                  <div class="f s6"><label>Comissão da loja (%)</label><input class="input" id="consCommission" type="number" min="0" max="99.99" step="0.1"></div>
+                  <div class="f s6"><label>Outras taxas / impostos (%)</label><input class="input" id="consOtherFees" type="number" min="0" max="99.99" step="0.1"></div>
+                  <div class="f s3"><label>Quantidade entregue</label><input class="input" id="consDelivered" type="number" min="0" step="1"></div>
+                  <div class="f s3"><label>Quantidade vendida</label><input class="input" id="consSold" type="number" min="0" step="1"></div>
+                  <div class="f s6"><label>Periodicidade do acerto</label><select id="consSettlement"><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="personalizada">Personalizada</option></select></div>
+                  <div class="f s6 hidden" id="settlementCustomWrap"><label>Periodicidade personalizada</label><input class="input" id="consSettlementCustom" placeholder="Ex.: a cada 10 dias"></div>
+                </div>
+              </div>
+              <div class="box">
+                <h3 class="title">Meta de preço</h3>
+                <label>Calcular com base em</label>
+                <select id="consGoalMode"><option value="profit">Lucro desejado em R$ por unidade</option><option value="margin">Margem líquida desejada (%)</option></select>
+                <div id="goalProfitWrap" style="margin-top:9px"><label>Lucro desejado por unidade</label><input class="input" id="consDesiredProfit" type="number" min="0" step="0.01"></div>
+                <div id="goalMarginWrap" class="hidden" style="margin-top:9px"><label>Margem líquida desejada (%)</label><input class="input" id="consDesiredMargin" type="number" min="0" max="99.99" step="0.1"><div class="hint">Lucro líquido ÷ preço ao público.</div></div>
+                <label style="margin-top:9px">Arredondamento comercial</label>
+                <select id="consRounding"><option value="x90">Terminar em R$ X,90</option><option value="x99">Terminar em R$ X,99</option><option value="integer">Número inteiro</option><option value="none">Sem arredondamento</option></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="note hidden" id="consErrors" style="margin-top:12px"></div>
+          <div id="consResults" class="cons-full-only" style="margin-top:12px"></div>
+
+          <div class="box cons-full-only" style="margin-top:12px">
+            <div class="market-section-head"><div><h3 class="title">Simulador de cenários</h3><div class="hint">Compare preços e comissões. Verde = saudável; amarelo = margem abaixo do limite visual; vermelho = prejuízo.</div></div><div><label>Limite saudável (%)</label><input class="input scenario-threshold" id="healthyThreshold" type="number" min="0" max="100" step="1"></div></div>
+            <div class="scenario-editors">
+              <div><label>Comissões (%)</label><div id="scenarioCommissions" class="scenario-inputs"></div></div>
+              <div><label>Preços (R$)</label><div id="scenarioPrices" class="scenario-inputs"></div></div>
+            </div>
+            <div class="table" style="margin-top:10px"><table><thead><tr><th>Preço</th><th>Comissão</th><th>Loja</th><th>Repasse</th><th>Lucro produtor</th><th>Margem</th><th>Status</th></tr></thead><tbody id="consScenarioBody"></tbody></table></div>
+            <div class="hint">O limite de 20% é apenas critério visual inicial e não uma regra contábil.</div>
+          </div>
+
+          <div class="box negotiation-card" style="margin-top:12px">
+            <h3 class="title">Resumo para apresentar ao lojista</h3>
+            <p id="negotiationText" class="negotiation-text"></p>
+            <button class="btn primary" id="copySummary">Copiar resumo</button>
+            <div class="hint">Resumo comercial. Não é contrato e não substitui orientação jurídica.</div>
+          </div>
+        </div>
+
+        <div id="resaleMode" class="hidden">
+          <div class="cons-simple-only">
+            <div class="box cons-quick" style="margin-top:12px">
+              <div class="cons-quick-head"><div><h3 class="title">Revenda simples</h3><div class="hint">Escolha o lucro do produtor, a margem da loja e a quantidade.</div></div><button class="btn" id="useSuggestedResale">Usar preços sugeridos</button></div>
+              <div class="cons-steps">
+                <div class="cons-step"><div class="cons-step-num">2</div><div><label>Lucro do produtor / unidade</label><div class="quick-options">
+                  <button class="quick-chip" data-quick-key="producerDesiredProfit" data-quick-value="2">R$ 2</button>
+                  <button class="quick-chip" data-quick-key="producerDesiredProfit" data-quick-value="4">R$ 4</button>
+                  <button class="quick-chip" data-quick-key="producerDesiredProfit" data-quick-value="6">R$ 6</button>
+                  <button class="quick-chip" data-quick-key="producerDesiredProfit" data-quick-value="8">R$ 8</button>
+                </div></div></div>
+                <div class="cons-step"><div class="cons-step-num">3</div><div><label>Margem desejada da loja</label><div class="quick-options">
+                  <button class="quick-chip" data-quick-key="storeDesiredMarginPct" data-quick-value="20">20%</button>
+                  <button class="quick-chip" data-quick-key="storeDesiredMarginPct" data-quick-value="30">30%</button>
+                  <button class="quick-chip" data-quick-key="storeDesiredMarginPct" data-quick-value="40">40%</button>
+                  <button class="quick-chip" data-quick-key="storeDesiredMarginPct" data-quick-value="50">50%</button>
+                </div></div></div>
+                <div class="cons-step"><div class="cons-step-num">4</div><div><label>Quantidade vendida para a loja</label><div class="quick-options">
+                  <button class="quick-chip" data-quick-key="resaleQty" data-quick-value="10">10 un.</button>
+                  <button class="quick-chip" data-quick-key="resaleQty" data-quick-value="20">20 un.</button>
+                  <button class="quick-chip" data-quick-key="resaleQty" data-quick-value="30">30 un.</button>
+                  <button class="quick-chip" data-quick-key="resaleQty" data-quick-value="50">50 un.</button>
+                </div></div></div>
+              </div>
+              <div id="quickResaleResults" class="quick-result-strip"></div>
+              <button class="btn cons-open-full" id="openFullResale">Quero ajustar atacado, varejo e taxas manualmente</button>
+            </div>
+          </div>
+
+          <div class="cons-full-only">
+            <div class="cons-grid" style="margin-top:12px">
+              <div class="box">
+                <h3 class="title">Venda para a loja</h3>
+                <div class="row">
+                  <div class="f s6"><label>Preço de atacado</label><input class="input" id="resaleWholesale" type="number" min="0" step="0.01"></div>
+                  <div class="f s6"><label>Preço sugerido ao consumidor</label><input class="input" id="resaleRetail" type="number" min="0" step="0.01"></div>
+                  <div class="f s6"><label>Quantidade vendida para loja</label><input class="input" id="resaleQty" type="number" min="0" step="1"></div>
+                  <div class="f s6"><label>Tipo de taxa do produtor</label><select id="producerFeeMode"><option value="percent">Percentual sobre atacado</option><option value="fixed">R$ fixo por unidade</option></select></div>
+                  <div class="f s6"><label id="producerFeeLabel">Taxas do produtor (% do atacado)</label><input class="input" id="producerFeeValue" type="number" min="0" step="0.01"></div>
+                  <div class="f s6"><label>Lucro desejado do produtor / un.</label><input class="input" id="producerDesiredProfit" type="number" min="0" step="0.01"></div>
+                  <div class="f s6"><label>Margem desejada da loja (%)</label><input class="input" id="storeDesiredMargin" type="number" min="0" max="99.99" step="0.1"></div>
+                </div>
+              </div>
+              <div class="neutral"><b>Como ler:</b> margem do produtor = lucro líquido do produtor ÷ atacado. Margem da loja = lucro bruto da loja ÷ preço ao consumidor.</div>
+            </div>
+          </div>
+          <div class="note hidden" id="resaleErrors" style="margin-top:12px"></div>
+          <div id="resaleResults" class="cons-full-only" style="margin-top:12px"></div>
+        </div>
+
+        <div class="box cons-full-only" style="margin-top:12px"><h3 class="title">Cenários salvos</h3><div id="consSaved"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card span2" id="catalogSection">
+      <div class="ch"><div class="num">10</div><div><h2>Meu Catálogo de Rentabilidade</h2><div class="muted">Fotografias dos produtos que você já precificou. Salvo apenas neste navegador por enquanto.</div></div></div>
+      <div class="cb">
+        <div class="market-kpis" id="catalogStats"></div>
+        <div class="table" style="margin-top:13px"><table><thead><tr><th>Produto</th><th>Canal</th><th>Custo</th><th>Preço</th><th>Lucro/un.</th><th>Margem</th><th>Lucro/h</th><th></th></tr></thead><tbody id="catalogRows"></tbody></table></div>
+        <div class="hint" style="margin-top:10px">As médias acima são médias simples dos snapshots salvos; não são faturamento real até você registrar vendas. Essa estrutura já prepara a futura camada de estoque, pedidos e financeiro.</div>
+      </div>
+    </section>
+      </div>
+    </main>
+  </div>
+  
+  <div class="footer">Precifica 3D · motor 1.16.0 · Decimal · presets salvos no navegador. Confirme taxas do Seller Center antes de decisões importantes.</div>
+</div>
+
+<div class="modal" id="filamentModal"><div class="modalBox"><div class="modalHead"><h3>Meus filamentos</h3><button class="icon" data-close>✕</button></div><div id="filamentEditor"></div><button class="btn primary" id="addFilamentPreset">+ Novo filamento</button></div></div>
+<div class="modal" id="printerModal"><div class="modalBox"><div class="modalHead"><h3>Minhas impressoras</h3><button class="icon" data-close>✕</button></div><div class="neutral">Consumo e manutenção são estimativas editáveis de planejamento.</div><div id="printerEditor" style="margin-top:10px"></div><button class="btn primary" id="addPrinterPreset">+ Adicionar sua impressora</button></div></div>
+<div class="modal" id="packagingModal"><div class="modalBox"><div class="modalHead"><h3>Catálogo de embalagens</h3><button class="icon" data-close>✕</button></div><div id="packagingEditor"></div><button class="btn primary" id="addPackagingPreset">+ Nova embalagem</button></div></div>
+<div class="modal" id="supplyModal"><div class="modalBox"><div class="modalHead"><h3>Catálogo de insumos</h3><button class="icon" data-close>✕</button></div><div id="supplyEditor"></div><button class="btn primary" id="addSupplyPreset">+ Novo insumo</button></div></div>
+
+<div class="auth-modal auth-gate" id="accountModal" aria-hidden="false">
+  <div class="auth-shell auth-shell-gate">
+    <section class="auth-brand-pane">
+      <div class="auth-brand-lockup">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path class="mark-shell" d="M24 3.8 41.6 14v20L24 44.2 6.4 34V14L24 3.8Z"/><path class="mark-layer mark-layer-1" d="m12 16.2 12-6.9 12 6.9-12 6.9-12-6.9Z"/><path class="mark-layer mark-layer-2" d="m12 23.7 12 6.9 12-6.9v5.7l-12 6.9-12-6.9v-5.7Z"/><path class="mark-calc" d="M31.2 28.4h5.3v8.1h-5.3z"/><path class="mark-eq" d="M32.4 31.1h2.9M32.4 33.7h2.9"/></svg>
+        </div>
+        <h2>Precifica <span>3D</span></h2>
+      </div>
+      <span class="auth-superline">PRECIFICAÇÃO • MARKETPLACES • CONSIGNAÇÃO</span>
+      <h3>Transforme horas de impressão em preço, margem e lucro que fazem sentido.</h3>
+      <p>O Precifica 3D organiza os custos da sua peça, compara canais de venda, simula consignação e mantém o histórico da sua operação em um painel pensado para quem realmente imprime e vende.</p>
+      <div class="auth-points auth-points-rich">
+        <div class="auth-point"><i>✓</i><span><b>Motor financeiro de alta precisão</b><small>Decimal.js com 40 dígitos e sem arredondamentos intermediários.</small></span></div>
+        <div class="auth-point"><i>✓</i><span><b>Custos reais de produção</b><small>Filamento, energia, manutenção, embalagem, taxas e perdas.</small></span></div>
+        <div class="auth-point"><i>✓</i><span><b>Consignação operacional</b><small>Pontos, peças expostas, vendas, recebimentos e margem por parceiro.</small></span></div>
+        <div class="auth-point"><i>✓</i><span><b>Seu padrão fica salvo</b><small>Filamento, impressora e energia podem ser reaproveitados sem contaminar um novo cálculo.</small></span></div>
+      </div>
+      <div class="auth-trust-row"><span>Motor Decimal 40 dígitos</span><span>Dados locais no navegador</span><span>Responsivo</span></div>
+    </section>
+    <section class="auth-form-pane">
+      <button class="auth-close" id="closeAccount" aria-label="Fechar" title="Voltar ao painel">✕</button>
+      <div class="auth-form-heading"><span>ACESSO AO PAINEL</span><h3>Entre no Precifica 3D</h3><p>Seu acesso atual é local neste dispositivo. A sincronização em nuvem será conectada depois sem mudar sua forma de usar o painel.</p></div>
+      <div class="auth-tabs">
+        <button class="active" data-auth-tab="login">Entrar</button>
+        <button data-auth-tab="signup">Criar acesso</button>
+      </div>
+
+      <div class="auth-panel" data-auth-panel="login">
+        <form id="localLoginForm">
+          <label>E-mail</label><input class="input" id="loginEmail" type="email" autocomplete="email" placeholder="seu@email.com" required>
+          <label>Senha</label><input class="input" id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" required>
+          <button class="btn primary auth-primary" type="submit">Entrar no painel</button>
+        </form>
+        <div class="auth-login-hint" id="loginHint">Se este é seu primeiro acesso neste navegador, crie um acesso local.</div>
+      </div>
+
+      <div class="auth-panel hidden" data-auth-panel="signup">
+        <form id="localSignupForm">
+          <label>Seu nome</label><input class="input" id="signupName" autocomplete="name" placeholder="Como quer aparecer no painel" required>
+          <label>E-mail</label><input class="input" id="signupEmail" type="email" autocomplete="email" placeholder="seu@email.com" required>
+          <label>Senha</label><input class="input" id="signupPassword" type="password" minlength="6" autocomplete="new-password" placeholder="Mínimo de 6 caracteres" required>
+          <button class="btn primary auth-primary" type="submit">Criar acesso local</button>
+        </form>
+      </div>
+
+      <div class="auth-saved-user hidden" id="savedUserCard">
+        <div><span>PERFIL ENCONTRADO</span><b id="savedUserName">Maker</b><small id="savedUserEmail"></small></div>
+        <button class="btn" id="useSavedUser" type="button">Continuar com este perfil</button>
+      </div>
+
+      <div class="auth-divider">OU</div>
+      <button class="btn auth-guest" id="guestLogin" type="button">Entrar como visitante neste dispositivo</button>
+      <div class="auth-note"><b>Importante:</b> este login é local e não é uma conta em nuvem. A senha é armazenada apenas como hash no navegador; nenhum dado é enviado para servidor nesta versão.</div>
+    </section>
+  </div>
+</div>
+<div class="shell-toast" id="shellToast"></div>
+
+<script src="./vendor/decimal.js?v=1.16.0"></script>
+<script src="./finance-engine.js?v=1.16.0"></script>
+<script src="./app.js?v=1.16.0"></script>
+<script src="./market.js?v=1.16.0"></script>
+<script src="./consignment-math.js?v=1.16.0"></script>
+<script src="./consignment.js?v=1.16.0"></script>
+<script src="./consignment-ops.js?v=1.16.0"></script>
+<script src="./ui.js?v=1.16.0"></script>
+<script src="./manual-calc.js?v=1.16.0"></script>
+<script src="./shell.js?v=1.16.0"></script>
+</body></html>
